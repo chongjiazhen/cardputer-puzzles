@@ -3,12 +3,16 @@
 #include "frontend.h"
 #include "keymap.h"
 #include "input.h"
+#include "pointer.h"
 
 // gamelist[] and gamecount declared by puzzles.h under #ifdef COMBINED (included via frontend.h)
 
 static frontend g_fe;
 static midend *g_me;
 static uint32_t g_last_ms;
+
+static puz::Pointer g_ptr{120, 67};
+static bool g_ptr_on = true;
 
 void setup() {
   Serial.begin(115200);
@@ -36,9 +40,35 @@ void setup() {
 void loop() {
   cardputer::update();
 
-  // Input: map each pressed key to a midend button and process it.
+  // Single dt computed once; used for both IMU step and timer.
+  uint32_t now = millis();
+  float dt = (now - g_last_ms) / 1000.0f;
+
+  // IMU: advance pointer when enabled.
+  cardputer::Imu imu;
+  if (g_ptr_on && cardputer::imuRead(imu))
+    puz::pointerStep(g_ptr, imu.ax, imu.ay, dt, 240, 135);
+
+  // Input: map each pressed key to an event and process it.
   for (char c : cardputer::keysJustPressed()) {
     puz::InputEvent ev = puz::eventForChar(c);
+
+    // Pointer-coord events handled before midendButton (they return -1).
+    if (ev.kind == puz::Ev::TogglePointer) {
+      g_ptr_on = !g_ptr_on;
+      continue;
+    }
+    if (ev.kind == puz::Ev::ClickL) {
+      midend_process_key(g_me, (int)g_ptr.x, (int)g_ptr.y, LEFT_BUTTON);
+      midend_process_key(g_me, (int)g_ptr.x, (int)g_ptr.y, LEFT_RELEASE);
+      continue;
+    }
+    if (ev.kind == puz::Ev::ClickR) {
+      midend_process_key(g_me, (int)g_ptr.x, (int)g_ptr.y, RIGHT_BUTTON);
+      midend_process_key(g_me, (int)g_ptr.x, (int)g_ptr.y, RIGHT_RELEASE);
+      continue;
+    }
+
     if (ev.kind == puz::Ev::Menu) {
       // Task 8: return to chooser menu. No-op for now.
       continue;
@@ -52,14 +82,21 @@ void loop() {
   }
 
   // Timer: advance midend clock when a timed animation is active.
-  uint32_t now = millis();
   if (g_fe.timer_active) {
-    midend_timer(g_me, (now - g_last_ms) / 1000.0f);
+    midend_timer(g_me, dt);
   }
-  g_last_ms = now;
 
   // Redraw: midend only repaints changed regions internally.
   midend_redraw(g_me);
+
+  // Cursor: draw red crosshair on M5.Display (not canvas) so blitter never captures it.
+  if (g_ptr_on) {
+    int x = (int)g_ptr.x, y = (int)g_ptr.y;
+    M5.Display.drawLine(x - 4, y, x + 4, y, TFT_RED);
+    M5.Display.drawLine(x, y - 4, x, y + 4, TFT_RED);
+  }
+
+  g_last_ms = now;
 
   delay(16);
 }

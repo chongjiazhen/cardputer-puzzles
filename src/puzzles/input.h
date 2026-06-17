@@ -40,7 +40,8 @@ enum class Ev {
   Select, Select2,
   Char,
   Undo, Redo, NewGame, Solve,
-  Menu
+  Menu,
+  ClickL, ClickR, TogglePointer
 };
 
 struct InputEvent { Ev kind; char ch; };

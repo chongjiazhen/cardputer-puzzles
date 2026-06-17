@@ -27,6 +27,9 @@ inline InputEvent eventForChar(char c) {
     case 'n': return {Ev::NewGame, 0};
     case 's': return {Ev::Solve, 0};
     case '`': return {Ev::Menu, 0};     // Esc-equivalent -> back to chooser (Task 8)
+    case 'k': return {Ev::ClickL, 0};
+    case 'l': return {Ev::ClickR, 0};
+    case 'p': return {Ev::TogglePointer, 0};
     default:
       if (c >= '0' && c <= '9') return {Ev::Char, c};
       if (c >= 'a' && c <= 'z') return {Ev::Char, c};

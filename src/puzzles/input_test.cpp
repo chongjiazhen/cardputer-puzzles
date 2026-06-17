@@ -36,8 +36,11 @@ int main() {
   assert(midendButton({Ev::Solve,   0})   == UI_SOLVE);
   assert(midendButton({Ev::Char,   '5'})  == '5');
   assert(midendButton({Ev::Char,   'a'})  == 'a');
-  assert(midendButton({Ev::Menu,    0})   == -1);
-  assert(midendButton({Ev::None,    0})   == -1);
+  assert(midendButton({Ev::Menu,          0}) == -1);
+  assert(midendButton({Ev::None,          0}) == -1);
+  assert(midendButton({Ev::ClickL,        0}) == -1);
+  assert(midendButton({Ev::ClickR,        0}) == -1);
+  assert(midendButton({Ev::TogglePointer, 0}) == -1);
   printf("ok\n");
   return 0;
 }
