@@ -3,4 +3,6 @@
 # host test build artifacts
 src/puzzles/input_test
 src/puzzles/input_test.exe
+src/puzzles/pointer_test
+src/puzzles/pointer_test.exe
 *.obj
