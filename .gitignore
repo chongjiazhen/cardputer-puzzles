@@ -1,2 +1,6 @@
 .pio/
 *.bin
+# host test build artifacts
+src/puzzles/input_test
+src/puzzles/input_test.exe
+*.obj
