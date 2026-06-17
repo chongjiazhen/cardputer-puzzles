@@ -1,11 +1,14 @@
 #include <Arduino.h>
 #include "cardputer_hw.h"
 #include "frontend.h"
+#include "keymap.h"
+#include "input.h"
 
 // gamelist[] and gamecount declared by puzzles.h under #ifdef COMBINED (included via frontend.h)
 
 static frontend g_fe;
 static midend *g_me;
+static uint32_t g_last_ms;
 
 void setup() {
   Serial.begin(115200);
@@ -27,6 +30,36 @@ void setup() {
                 gamelist[0]->name, w, h, gamecount);
 
   midend_force_redraw(g_me);
+  g_last_ms = millis();
 }
 
-void loop() { cardputer::update(); delay(50); }
+void loop() {
+  cardputer::update();
+
+  // Input: map each pressed key to a midend button and process it.
+  for (char c : cardputer::keysJustPressed()) {
+    puz::InputEvent ev = puz::eventForChar(c);
+    if (ev.kind == puz::Ev::Menu) {
+      // Task 8: return to chooser menu. No-op for now.
+      continue;
+    }
+    int btn = puz::midendButton(ev);
+    if (btn >= 0) {
+      if (midend_process_key(g_me, 0, 0, btn) == PKR_QUIT) {
+        // Task 8: PKR_QUIT will trigger chooser / shutdown. No-op for now.
+      }
+    }
+  }
+
+  // Timer: advance midend clock when a timed animation is active.
+  uint32_t now = millis();
+  if (g_fe.timer_active) {
+    midend_timer(g_me, (now - g_last_ms) / 1000.0f);
+  }
+  g_last_ms = now;
+
+  // Redraw: midend only repaints changed regions internally.
+  midend_redraw(g_me);
+
+  delay(16);
+}
