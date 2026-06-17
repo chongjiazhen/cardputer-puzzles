@@ -75,7 +75,7 @@ static void d_text(drawing *dr, int x, int y, int fonttype, int fontsize,
                    int align, int colour, const char *text) {
   (void)fonttype;
   M5Canvas *cv = FE(dr)->canvas;
-  int sz = fontsize / 8; if (sz < 1) sz = 1;
+  int sz = (fontsize + 4) / 8; if (sz < 1) sz = 1;   // round-to-nearest font scale
   cv->setTextSize(sz);
   cv->setTextColor(FE(dr)->colours[colour]);
   textdatum_t datum;

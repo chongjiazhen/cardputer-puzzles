@@ -12,7 +12,8 @@ void setup() {
   cardputer::begin();
 
   g_fe.canvas = new M5Canvas(&M5.Display);
-  g_fe.canvas->createSprite(240, 135);
+  if (!g_fe.canvas->createSprite(240, 135))
+    fatal("canvas createSprite failed - not enough SRAM");
   g_fe.colours = nullptr; g_fe.ncolours = 0; g_fe.timer_active = false;
   g_fe.status[0] = '\0';
 
