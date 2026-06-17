@@ -37,9 +37,7 @@ git submodule update --init
 pio run -e puzzles -t upload
 ```
 
-Requires [PlatformIO](https://platformio.org/) and the ESP32 toolchain (installed automatically by PlatformIO on first build).
-
-Copy `secrets.h.example` to `src/puzzles/secrets.h` and fill in Wi-Fi credentials if Wi-Fi features are used; otherwise leave blank.
+Requires [PlatformIO](https://platformio.org/) and the ESP32 toolchain (installed automatically by PlatformIO on first build). No secrets or network config — the puzzles run fully offline.
 
 ### Host tests (Linux / CI)
 
