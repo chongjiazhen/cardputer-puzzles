@@ -94,10 +94,6 @@ pio run -e puzzles -t upload
 
 PlatformIO will compile the puzzles app and flash it to the connected Cardputer ADV over USB.
 
-### Secrets (optional)
-
-If Wi-Fi features are used, copy `secrets.h.example` to `src/puzzles/secrets.h` and fill in credentials. `secrets.h` is gitignored and must never be committed.
-
 ### Host tests
 
 Pure-logic unit tests (key mapping, pointer kinematics, colour conversion) can be run on the host without hardware:

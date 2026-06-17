@@ -118,6 +118,9 @@ void loop() {
   midend_redraw(g_me);
 
   // Cursor: draw red crosshair on M5.Display (not canvas) so blitter never captures it.
+  // COUPLING: the previous frame's crosshair is erased only because d_end() pushes the
+  // FULL canvas every frame (no dirty-flag gating). If redraw/d_end is ever gated to
+  // changed regions, the crosshair needs its own save/restore or it will leave trails.
   if (g_ptr_on) {
     int x = (int)g_ptr.x, y = (int)g_ptr.y;
     M5.Display.drawLine(x - 4, y, x + 4, y, TFT_RED);
