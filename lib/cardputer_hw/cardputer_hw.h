@@ -9,6 +9,7 @@
 #include <Arduino.h>
 #include <M5Cardputer.h>   // pulls in M5Unified + M5GFX; provides M5Cardputer.Keyboard (Cardputer + ADV)
 #include <vector>
+#include "input.h"   // puz::KeyPress (resolved via -Isrc/puzzles)
 
 namespace cardputer {
 
@@ -24,6 +25,9 @@ void update();
 bool keyPressed();
 // Characters entered since last update() (already de-bounced by M5).
 std::vector<char> keysJustPressed();
+// Modifier-aware variant: printable chars carry the Ctrl flag; Enter/Del/Tab
+// arrive as the '\r'/'\b'/'\t' sentinels. Preferred for the puzzle frontend.
+std::vector<puz::KeyPress> keysJustPressedEx();
 // Convenience: blocking line input rendered to screen. Returns on Enter.
 String readLine(const String& prompt = "");
 

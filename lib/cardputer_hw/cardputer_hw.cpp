@@ -33,6 +33,13 @@ std::vector<char> keysJustPressed() {
   return out;
 }
 
+std::vector<puz::KeyPress> keysJustPressedEx() {
+  if (!(M5Cardputer.Keyboard.isChange() && M5Cardputer.Keyboard.isPressed()))
+    return {};
+  auto s = M5Cardputer.Keyboard.keysState();
+  return puz::buildKeyPresses(s.word, s.ctrl, s.enter, s.del, s.tab);
+}
+
 String readLine(const String& prompt) {
   String buf;
   M5.Display.fillScreen(TFT_BLACK);

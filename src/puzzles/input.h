@@ -1,5 +1,23 @@
 #pragma once
+#include <vector>
 namespace puz {
+
+// A modifier-aware keypress. ch is a printable char, or one of the control
+// sentinels '\r' (enter), '\b' (del/backspace), '\t' (tab).
+struct KeyPress { char ch; bool ctrl; };
+
+// Build the per-keypress list from a raw M5Cardputer KeysState snapshot.
+// Printable chars carry the live ctrl flag; enter/del/tab become sentinels.
+inline std::vector<KeyPress> buildKeyPresses(const std::vector<char>& word,
+                                             bool ctrl, bool enter,
+                                             bool del, bool tab) {
+  std::vector<KeyPress> out;
+  for (char c : word) out.push_back({c, ctrl});
+  if (enter) out.push_back({'\r', false});
+  if (del)   out.push_back({'\b', false});
+  if (tab)   out.push_back({'\t', false});
+  return out;
+}
 
 // Mirror of puzzles.h button constants (verified against pinned upstream,
 // upstream/puzzles.h lines 32-63).
