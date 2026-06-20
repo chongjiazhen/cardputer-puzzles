@@ -11,3 +11,6 @@ run_input_test.bat
 
 # brainstorming visual companion (local only)
 .superpowers/
+
+# host-test helper (local)
+run_host_test.sh

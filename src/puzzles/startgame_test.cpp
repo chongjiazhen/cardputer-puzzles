@@ -39,7 +39,8 @@
 extern "C" {
 #include "puzzles.h"
 }
-#include "presets.h"   // presetFor() — same table the firmware applies in startGame
+#include "presets.h"     // presetFor() — same table the firmware applies in startGame
+#include "params_ui.h"   // flattenPresets/applyPreset + config helpers (host-tested here)
 
 // gamelist[] / gamecount come from src/puzzles/gamelist.c (linked separately).
 // puzzles.h under -DCOMBINED already extern-declares them; no re-declaration needed.
@@ -197,6 +198,23 @@ int main() {
         }
         if (me) midend_free(me);
         printf("%-12s ok (25 re-entry cycles)\n", name);
+    }
+
+    // ---- preset flatten + apply ----
+    printf("\n-- presets --\n");
+    for (int g = 0; g < gamecount; g++) {
+        frontend fe{};
+        midend *me = midend_new(&fe, gamelist[g], &stub_api, &fe);
+        puz::PresetEntry pe[64];
+        int np = puz::flattenPresets(me, pe, 64);
+        if (np < 2) { printf("%-12s FAIL (<2 entries incl Custom)\n", gamelist[g]->name); fail++; midend_free(me); continue; }
+        if (pe[np-1].id != -1) { printf("%-12s FAIL (last not Custom)\n", gamelist[g]->name); fail++; midend_free(me); continue; }
+        bool ok = true;
+        for (int k = 0; k < np - 1; k++)               // every real preset applies + generates
+            if (!puz::applyPreset(me, pe[k].id)) { ok = false; break; }
+        if (!ok) { printf("%-12s FAIL (applyPreset)\n", gamelist[g]->name); fail++; midend_free(me); continue; }
+        printf("%-12s ok (%d presets + Custom)\n", gamelist[g]->name, np - 1);
+        midend_free(me);
     }
 
     printf("\n%d/%d passed\n", pass, gamecount);
