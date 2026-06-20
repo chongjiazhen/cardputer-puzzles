@@ -4,18 +4,16 @@ Simon Tatham's Portable Puzzle Collection ported to the **M5Stack Cardputer ADV*
 
 Upstream project: https://www.chiark.greenend.org.uk/~sgtatham/puzzles/
 
-## Included games
+## Included games (40)
 
-| Game | Notes |
-|---|---|
-| **Net** | Rotate tiles to connect all nodes |
-| **Mines** | Minesweeper |
-| **Solo** | Sudoku |
-| **Light Up** | Place lightbulbs to illuminate every cell |
-| **Filling** | Fill regions with digits matching region size |
-| **Bridges** | Connect islands with the right number of bridges |
-| **Unequal** | Futoshiki — place digits respecting inequality signs |
-| **Tents** | Place tents next to trees satisfying row/column counts |
+All 40 puzzles from Simon Tatham's collection (excludes `nullgame`):
+
+Black Box · Bridges · Cube · Dominosa · Fifteen · Filling · Flip · Flood ·
+Galaxies · Guess · Inertia · Keen · Light Up · Loopy · Magnets · Map ·
+Mines · Mosaic · Net · Netslide · Palisade · Pattern · Pearl · Pegs ·
+Range · Rectangles · Same Game · Signpost · Singles · Sixteen · Slant ·
+Solo · Tents · Towers · Train Tracks · Twiddle · Undead · Unequal ·
+Unruly · Untangle
 
 ## Hardware
 
@@ -39,15 +37,44 @@ pio run -e puzzles -t upload
 
 Requires [PlatformIO](https://platformio.org/) and the ESP32 toolchain (installed automatically by PlatformIO on first build). No secrets or network config — the puzzles run fully offline.
 
-### Host tests (Linux / CI)
+### Host tests
 
-Unit tests for pure logic (key mapping, pointer kinematics, colour conversion) can be run on the host without hardware:
+`startgame_test` exercises the full midend lifecycle (new game → size → redraw → free) for all 40 games on a desktop. Verified 40/40 pass before every flash.
+
+Build (two-step: C files via gcc, C++ via g++):
 
 ```sh
-g++ -std=c++17 src/puzzles/<name>_test.cpp -o /tmp/test && /tmp/test
+# 1. Compile all C sources
+gcc -std=c11 -DCOMBINED -DNO_TGMATH_H -I./upstream -I./src/puzzles -c \
+    upstream/combi.c upstream/divvy.c upstream/draw-poly.c \
+    upstream/drawing.c upstream/dsf.c upstream/findloop.c \
+    upstream/grid.c upstream/hat.c upstream/latin.c upstream/laydomino.c \
+    upstream/loopgen.c upstream/malloc.c upstream/matching.c \
+    upstream/midend.c upstream/misc.c upstream/penrose.c \
+    upstream/penrose-legacy.c upstream/printing.c upstream/ps.c \
+    upstream/random.c upstream/sort.c upstream/spectre.c \
+    upstream/tdq.c upstream/tree234.c upstream/version.c \
+    upstream/net.c upstream/mines.c upstream/solo.c upstream/lightup.c \
+    upstream/filling.c upstream/bridges.c upstream/unequal.c upstream/tents.c \
+    upstream/blackbox.c upstream/cube.c upstream/dominosa.c \
+    upstream/fifteen.c upstream/flip.c upstream/flood.c \
+    upstream/galaxies.c upstream/guess.c upstream/inertia.c upstream/keen.c \
+    upstream/loopy.c upstream/magnets.c upstream/map.c upstream/mosaic.c \
+    upstream/netslide.c upstream/palisade.c upstream/pattern.c \
+    upstream/pearl.c upstream/pegs.c upstream/range.c \
+    upstream/rect.c upstream/samegame.c upstream/signpost.c \
+    upstream/singles.c upstream/sixteen.c upstream/slant.c \
+    upstream/towers.c upstream/tracks.c upstream/twiddle.c \
+    upstream/undead.c upstream/unruly.c upstream/untangle.c \
+    src/puzzles/gamelist.c
+
+# 2. Compile and link C++ test
+g++ -std=c++17 -DCOMBINED -DNO_TGMATH_H -I./upstream -I./src/puzzles \
+    -c src/puzzles/startgame_test.cpp -o startgame_test.o
+g++ -std=c++17 startgame_test.o *.o -o startgame_test -lm && ./startgame_test
 ```
 
-Note: the primary development box uses MSVC; the public CI target is g++.
+Note: `hat.c` and `spectre.c` are tiling libraries (not games) — compiled in for `grid.c` but not listed in `gamelist[]`.
 
 ## Controls
 
