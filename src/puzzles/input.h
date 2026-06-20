@@ -57,8 +57,9 @@ enum class Ev {
   None, Up, Down, Left, Right,
   Select, Select2,
   Char,
-  Undo, Redo, NewGame, Solve,
-  Menu,
+  Undo, Redo, NewGame, Solve, Restart,
+  Menu,            // legacy (` in old loop) — superseded by BackToChooser; removed in Task 7
+  BackToChooser, CommandMenu,
   ClickL, ClickR, TogglePointer
 };
 

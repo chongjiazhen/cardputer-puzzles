@@ -4,6 +4,7 @@
 #include <cstdio>
 #include <vector>
 #include "input.h"
+#include "keymap.h"
 
 static int fails = 0;
 #define CHECK(c) do { if(!(c)){ printf("FAIL %s:%d  %s\n",__FILE__,__LINE__,#c); fails++; } } while(0)
@@ -26,8 +27,30 @@ static void test_buildKeyPresses() {
     CHECK(t.size()==1 && t[0].ch=='\t');
 }
 
+static void test_eventForKey() {
+    using namespace puz;
+    CHECK(eventForKey({';',false}).kind == Ev::Up);
+    CHECK(eventForKey({'/',false}).kind == Ev::Right);
+    CHECK(eventForKey({'\r',false}).kind == Ev::Select);
+    CHECK(eventForKey({' ',false}).kind == Ev::Select2);
+    CHECK(eventForKey({'[',false}).kind == Ev::ClickL);
+    CHECK(eventForKey({']',false}).kind == Ev::ClickR);
+    CHECK(eventForKey({'\t',false}).kind == Ev::CommandMenu);
+    CHECK(eventForKey({'`',false}).kind == Ev::BackToChooser);
+    CHECK(eventForKey({'z',true}).kind == Ev::Undo);
+    CHECK(eventForKey({'y',true}).kind == Ev::Redo);
+    CHECK(eventForKey({'n',true}).kind == Ev::NewGame);
+    CHECK(eventForKey({'r',true}).kind == Ev::Restart);
+    // plain letters/digits go to the game as Char (nothing stolen)
+    InputEvent g = eventForKey({'l',false});
+    CHECK(g.kind == Ev::Char && g.ch == 'l');
+    CHECK(eventForKey({'5',false}).kind == Ev::Char);
+    CHECK(eventForKey({'a',false}).kind == Ev::Char);
+}
+
 int main() {
     test_buildKeyPresses();
+    test_eventForKey();
     printf(fails ? "\n%d FAIL\n" : "\nlogic_test ok\n", fails);
     return fails ? 1 : 0;
 }

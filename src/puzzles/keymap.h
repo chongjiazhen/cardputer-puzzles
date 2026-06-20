@@ -1,6 +1,5 @@
 #pragma once
-#include <M5Cardputer.h>
-#include "input.h"
+#include "input.h"   // pure — no Arduino/M5 deps, so this header is host-testable
 
 namespace puz {
 
@@ -35,6 +34,34 @@ inline InputEvent eventForChar(char c) {
       if (c >= 'a' && c <= 'z') return {Ev::Char, c};
       if (c >= 'A' && c <= 'Z') return {Ev::Char, c};
       return {Ev::None, 0};
+  }
+}
+
+// Modifier-aware mapping (collision-free). Plain digits/letters/'\b' fall
+// through to the game as Char; frontend commands live only on Ctrl+key,
+// '[' ']', Tab, and '`'. Replaces eventForChar at the call sites in Task 7.
+inline InputEvent eventForKey(KeyPress k) {
+  if (k.ctrl) {
+    switch (k.ch) {
+      case 'z': case 'Z': return {Ev::Undo, 0};
+      case 'y': case 'Y': return {Ev::Redo, 0};
+      case 'n': case 'N': return {Ev::NewGame, 0};
+      case 'r': case 'R': return {Ev::Restart, 0};
+      default:            return {Ev::None, 0};   // unknown Ctrl combo: ignore
+    }
+  }
+  switch (k.ch) {
+    case ';': return {Ev::Up, 0};
+    case '.': return {Ev::Down, 0};
+    case ',': return {Ev::Left, 0};
+    case '/': return {Ev::Right, 0};
+    case '\r': case '\n': return {Ev::Select, 0};
+    case ' ':  return {Ev::Select2, 0};
+    case '[':  return {Ev::ClickL, 0};
+    case ']':  return {Ev::ClickR, 0};
+    case '\t': return {Ev::CommandMenu, 0};
+    case '`':  return {Ev::BackToChooser, 0};
+    default:   return {Ev::Char, k.ch};   // digits, letters, '\b' → game
   }
 }
 
