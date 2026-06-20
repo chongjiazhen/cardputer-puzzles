@@ -5,6 +5,7 @@
 #include <vector>
 #include "input.h"
 #include "keymap.h"
+#include "picker.h"
 
 static int fails = 0;
 #define CHECK(c) do { if(!(c)){ printf("FAIL %s:%d  %s\n",__FILE__,__LINE__,#c); fails++; } } while(0)
@@ -48,9 +49,25 @@ static void test_eventForKey() {
     CHECK(eventForKey({'a',false}).kind == Ev::Char);
 }
 
+static void test_pickerWindow() {
+    using namespace puz;
+    PickerWindow a = pickerWindow(40, 0, 7);   // wrap at top
+    CHECK(a.count==7 && a.selSlot==3 && a.idx[0]==37 && a.idx[3]==0 && a.idx[6]==3);
+
+    PickerWindow b = pickerWindow(40, 39, 7);  // wrap at bottom
+    CHECK(b.count==7 && b.selSlot==3 && b.idx[3]==39 && b.idx[4]==0);
+
+    PickerWindow c = pickerWindow(3, 1, 7);    // fewer than rows: show all, no wrap
+    CHECK(c.count==3 && c.selSlot==1 && c.idx[0]==0 && c.idx[2]==2);
+
+    PickerWindow d = pickerWindow(40, 20, 7);  // middle
+    CHECK(d.count==7 && d.idx[0]==17 && d.idx[3]==20 && d.idx[6]==23);
+}
+
 int main() {
     test_buildKeyPresses();
     test_eventForKey();
+    test_pickerWindow();
     printf(fails ? "\n%d FAIL\n" : "\nlogic_test ok\n", fails);
     return fails ? 1 : 0;
 }
