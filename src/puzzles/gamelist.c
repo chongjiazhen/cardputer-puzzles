@@ -10,12 +10,14 @@ extern const game undead, unruly, untangle;
 
 /* hat.c and spectre.c are tiling library code, not puzzle games — no const game hat/spectre */
 
+/* Menu order: alphabetical by display name, matching the Android port and the
+ * upstream website. Display names differ from symbol names: rect="Rectangles",
+ * samegame="Same Game", tracks="Train Tracks", lightup="Light Up". */
 const game *gamelist[] = {
-  &net, &mines, &solo, &lightup, &filling, &bridges, &unequal, &tents,
-  &blackbox, &cube, &dominosa, &fifteen, &flip, &flood, &galaxies, &guess,
-  &inertia, &keen, &loopy, &magnets, &map, &mosaic, &netslide,
-  &palisade, &pattern, &pearl, &pegs, &range, &rect, &samegame, &signpost,
-  &singles, &sixteen, &slant, &towers, &tracks, &twiddle,
-  &undead, &unruly, &untangle,
+  &blackbox, &bridges, &cube, &dominosa, &fifteen, &filling, &flip, &flood,
+  &galaxies, &guess, &inertia, &keen, &lightup, &loopy, &magnets, &map,
+  &mines, &mosaic, &net, &netslide, &palisade, &pattern, &pearl, &pegs,
+  &range, &rect, &samegame, &signpost, &singles, &sixteen, &slant, &solo,
+  &tents, &towers, &tracks, &twiddle, &undead, &unequal, &unruly, &untangle,
 };
 const int gamecount = sizeof(gamelist) / sizeof(gamelist[0]);
