@@ -1,8 +1,7 @@
 // startgame_test.cpp — mirrors startGame() on device; catches crash/OOM per game.
 //
-// Build from repo root:
-//   g++ -std=c++17 -DCOMBINED -DNO_TGMATH_H -I./upstream -I./src/puzzles \
-//       src/puzzles/startgame_test.cpp src/puzzles/gamelist.c \
+// Build from repo root (two-step: C files via gcc, C++ via g++):
+//   gcc -std=c11 -DCOMBINED -DNO_TGMATH_H -I./upstream -I./src/puzzles -c \
 //       upstream/combi.c upstream/divvy.c upstream/draw-poly.c \
 //       upstream/drawing.c upstream/dsf.c upstream/findloop.c \
 //       upstream/grid.c upstream/hat.c upstream/latin.c upstream/laydomino.c \
@@ -13,7 +12,22 @@
 //       upstream/tdq.c upstream/tree234.c upstream/version.c \
 //       upstream/net.c upstream/mines.c upstream/solo.c upstream/lightup.c \
 //       upstream/filling.c upstream/bridges.c upstream/unequal.c upstream/tents.c \
-//       -o startgame_test -lm && ./startgame_test
+//       upstream/blackbox.c upstream/cube.c upstream/dominosa.c \
+//       upstream/fifteen.c upstream/flip.c upstream/flood.c \
+//       upstream/galaxies.c upstream/guess.c \
+//       upstream/inertia.c upstream/keen.c upstream/loopy.c \
+//       upstream/magnets.c upstream/map.c upstream/mosaic.c \
+//       upstream/netslide.c upstream/palisade.c upstream/pattern.c \
+//       upstream/pearl.c upstream/pegs.c upstream/range.c \
+//       upstream/rect.c upstream/samegame.c upstream/signpost.c \
+//       upstream/singles.c upstream/sixteen.c upstream/slant.c \
+//       upstream/towers.c upstream/tracks.c \
+//       upstream/twiddle.c upstream/undead.c upstream/unruly.c \
+//       upstream/untangle.c \
+//       src/puzzles/gamelist.c
+//   g++ -std=c++17 -DCOMBINED -DNO_TGMATH_H -I./upstream -I./src/puzzles \
+//       -c src/puzzles/startgame_test.cpp -o startgame_test.o
+//   g++ -std=c++17 startgame_test.o *.o -o startgame_test -lm && ./startgame_test
 
 #include <cassert>
 #include <cstdarg>
