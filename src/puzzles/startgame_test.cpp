@@ -159,6 +159,46 @@ int main() {
         pass++;
     }
 
+    // ---- re-entry stress ----
+    // The "re-enter Mines and nothing works" bug only shows on the 2nd+ entry.
+    // Mirror startGame's free->new->game_id->new_game cycle repeatedly, with
+    // simulated play (incl. a losing click) between, to catch leaks / heap
+    // corruption (crash) or a fatal()-style hang (caught by the run timeout).
+    printf("\n-- re-entry stress --\n");
+    for (int g = 0; g < gamecount; g++) {
+        const char *name = gamelist[g]->name;
+        // Focus on the games most likely to leave stale state: Mines + a few
+        // that generate on first input or use blitters.
+        if (strcmp(name,"Mines") && strcmp(name,"Solo") && strcmp(name,"Net") &&
+            strcmp(name,"Untangle") && strcmp(name,"Flood"))
+            continue;
+
+        frontend fe{};
+        midend *me = nullptr;
+        for (int cyc = 0; cyc < 25; cyc++) {
+            if (me) midend_free(me);                 // startGame: free previous entry
+            me = midend_new(&fe, gamelist[g], &stub_api, &fe);
+            const char *preset = presetFor(name);
+            if (preset) {
+                const char *err = midend_game_id(me, preset);
+                if (err) { printf("%-12s cyc %d game_id FAIL: %s\n", name, cyc, err); fail++; break; }
+            }
+            midend_new_game(me);
+            int w = 240, h = 135;
+            midend_size(me, &w, &h, true, 1.0f);
+            // simulate play: move cursor + select twice (Mines lays mines on the
+            // first select and can put the game into a lost state)
+            midend_process_key(me, 0, 0, CURSOR_SELECT);
+            midend_process_key(me, 0, 0, CURSOR_DOWN);
+            midend_process_key(me, 0, 0, CURSOR_RIGHT);
+            midend_process_key(me, 0, 0, CURSOR_SELECT);
+            midend_process_key(me, 0, 0, CURSOR_SELECT2);  // flag/right-click
+            midend_force_redraw(me);
+        }
+        if (me) midend_free(me);
+        printf("%-12s ok (25 re-entry cycles)\n", name);
+    }
+
     printf("\n%d/%d passed\n", pass, gamecount);
     return fail ? 1 : 0;
 }

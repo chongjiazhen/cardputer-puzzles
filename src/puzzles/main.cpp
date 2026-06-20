@@ -70,7 +70,7 @@ void loop() {
 
   cardputer::Imu imu;
   if (g_ptr_on && cardputer::imuRead(imu))
-    puz::pointerStep(g_ptr, imu.ax, imu.ay, dt, 240, 135);
+    puz::pointerStep(g_ptr, -imu.ax, imu.ay, dt, 240, 135);  // ADV accel X is inverted vs screen
 
   for (char c : cardputer::keysJustPressed()) {
     puz::InputEvent ev = puz::eventForChar(c);

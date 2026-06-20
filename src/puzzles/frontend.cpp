@@ -93,7 +93,13 @@ static void d_clip(drawing *dr, int x, int y, int w, int h) {
   FE(dr)->canvas->setClipRect(x, y, w, h);
 }
 static void d_unclip(drawing *dr) { FE(dr)->canvas->clearClipRect(); }
-static void d_start(drawing *dr) { (void)dr; }
+static void d_start(drawing *dr) {
+  // Begin a fresh frame with no clip. A draw cycle must not inherit a clip rect
+  // left set by the previous one (e.g. a game-over frame), or the next game
+  // redraws into a stale region and looks frozen. (Host stubs clip to no-ops,
+  // so this class of bug is only reproducible on device.)
+  FE(dr)->canvas->clearClipRect();
+}
 static void d_end(drawing *dr) {
   FE(dr)->canvas->pushSprite(&M5.Display, 0, 0);
 }
