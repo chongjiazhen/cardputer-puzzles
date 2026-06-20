@@ -8,3 +8,6 @@ src/puzzles/pointer_test
 src/puzzles/pointer_test.exe
 *.obj
 run_input_test.bat
+
+# brainstorming visual companion (local only)
+.superpowers/
