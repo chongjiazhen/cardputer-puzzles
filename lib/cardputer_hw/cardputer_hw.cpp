@@ -25,6 +25,10 @@ std::vector<char> keysJustPressed() {
   if (M5Cardputer.Keyboard.isChange() && M5Cardputer.Keyboard.isPressed()) {
     auto status = M5Cardputer.Keyboard.keysState();
     for (auto c : status.word) out.push_back(c);
+    // Enter and Del are separate flags in KeysState, not in .word. Emit them as
+    // the control chars eventForChar() expects, else Select/backspace never fire.
+    if (status.enter) out.push_back('\r');
+    if (status.del)   out.push_back('\b');
   }
   return out;
 }
