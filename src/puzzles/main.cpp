@@ -1,6 +1,7 @@
 #include <Arduino.h>
 #include "cardputer_hw.h"
 #include "frontend.h"
+#include "presets.h"
 #include "menu.h"
 #include "keymap.h"
 #include "input.h"
@@ -21,6 +22,8 @@ static void startGame(int idx) {
   if (g_me) { midend_free(g_me); g_me = nullptr; }
   g_me = midend_new(&g_fe, gamelist[idx], &cardputer_drawing_api, &g_fe);
   if (!g_me) return;
+  if (const char *p = presetFor(gamelist[idx]->name))
+    midend_game_id(g_me, p);  // returns nullptr on success; on error params stay default
   midend_new_game(g_me);
   frontend_load_colours(&g_fe, g_me);
   int w = 240, h = 135;

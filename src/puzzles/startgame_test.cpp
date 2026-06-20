@@ -39,6 +39,7 @@
 extern "C" {
 #include "puzzles.h"
 }
+#include "presets.h"   // presetFor() — same table the firmware applies in startGame
 
 // gamelist[] / gamecount come from src/puzzles/gamelist.c (linked separately).
 // puzzles.h under -DCOMBINED already extern-declares them; no re-declaration needed.
@@ -127,6 +128,20 @@ int main() {
             continue;
         }
 
+        // Apply the same screen-fit preset the firmware uses, and prove it
+        // parses. midend_new_game() below then proves it actually generates
+        // (a bad size would loop forever or assert — caught here, not on device).
+        const char *preset = presetFor(gamelist[i]->name);
+        if (preset) {
+            const char *err = midend_game_id(me, preset);
+            if (err) {
+                printf("FAIL (game_id \"%s\": %s)\n", preset, err);
+                fail++;
+                midend_free(me);
+                continue;
+            }
+        }
+
         midend_new_game(me);
 
         int w = 240, h = 135;
@@ -139,7 +154,8 @@ int main() {
         midend_force_redraw(me);
         midend_free(me);
 
-        printf("ok  (size %dx%d, %d colours)\n", w, h, ncolours);
+        if (preset) printf("ok  (size %dx%d, %d colours, preset=%s)\n", w, h, ncolours, preset);
+        else        printf("ok  (size %dx%d, %d colours)\n", w, h, ncolours);
         pass++;
     }
 
