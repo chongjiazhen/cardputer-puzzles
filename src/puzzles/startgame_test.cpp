@@ -217,6 +217,23 @@ int main() {
         midend_free(me);
     }
 
+    // ---- config round-trip ----
+    printf("\n-- config --\n");
+    for (int g = 0; g < gamecount; g++) {
+        frontend fe{};
+        midend *me = midend_new(&fe, gamelist[g], &stub_api, &fe);
+        midend_new_game(me);
+        char *title = nullptr;
+        config_item *cfg = puz::configBegin(me, &title);
+        if (!cfg) { printf("%-12s FAIL (no config)\n", gamelist[g]->name); fail++; midend_free(me); continue; }
+        const char *err = puz::configApply(me, cfg);   // unchanged -> must validate
+        if (err) { printf("%-12s FAIL (apply: %s)\n", gamelist[g]->name, err); fail++; puz::configFree(cfg); midend_free(me); continue; }
+        midend_new_game(me);
+        puz::configFree(cfg);
+        printf("%-12s ok\n", gamelist[g]->name);
+        midend_free(me);
+    }
+
     printf("\n%d/%d passed\n", pass, gamecount);
     return fail ? 1 : 0;
 }
