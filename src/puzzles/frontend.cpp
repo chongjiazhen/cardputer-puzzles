@@ -187,9 +187,9 @@ extern "C" void frontend_default_colour(frontend *fe, float *output) {
   output[0] = output[1] = output[2] = 0.85f;
 }
 extern "C" void get_random_seed(void **randseed, int *randseedsize) {
-  static uint32_t s[2];
+  uint32_t *s = (uint32_t *)malloc(2 * sizeof(uint32_t));  // midend_new calls sfree() on this
   s[0] = esp_random(); s[1] = esp_random();
-  *randseed = s; *randseedsize = sizeof s;
+  *randseed = s; *randseedsize = 2 * (int)sizeof(uint32_t);
 }
 extern "C" void activate_timer(frontend *fe)   { fe->timer_active = true; }
 extern "C" void deactivate_timer(frontend *fe) { fe->timer_active = false; }

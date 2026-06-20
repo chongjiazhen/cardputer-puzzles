@@ -18,24 +18,16 @@ static State g_state = State::MENU;
 static int g_sel = 0;
 
 static void startGame(int idx) {
-  Serial.printf("SG(%d): START\n", idx); Serial.flush();
   if (g_me) { midend_free(g_me); g_me = nullptr; }
-  Serial.printf("SG(%d): free done\n", idx); Serial.flush();
   g_me = midend_new(&g_fe, gamelist[idx], &cardputer_drawing_api, &g_fe);
-  Serial.printf("SG(%d): new done\n", idx); Serial.flush();
+  if (!g_me) return;
   midend_new_game(g_me);
-  Serial.printf("SG(%d): new_game done\n", idx); Serial.flush();
   frontend_load_colours(&g_fe, g_me);
-  Serial.printf("SG(%d): colours done\n", idx); Serial.flush();
   int w = 240, h = 135;
   midend_size(g_me, &w, &h, true, 1.0);
-  Serial.printf("SG(%d): size done w=%d h=%d\n", idx, w, h); Serial.flush();
-  Serial.printf("game=%s sized w=%d h=%d\n", gamelist[idx]->name, w, h);
   midend_force_redraw(g_me);
-  Serial.printf("SG(%d): redraw done\n", idx); Serial.flush();
   g_state = State::PLAYING;
   g_last_ms = millis();
-  Serial.printf("SG(%d): END\n", idx); Serial.flush();
 }
 
 static void openMenu() {
@@ -45,7 +37,6 @@ static void openMenu() {
 
 void setup() {
   Serial.begin(115200);
-  while (!Serial) delay(100);
   cardputer::begin();
 
   g_fe.canvas = new M5Canvas(&M5.Display);
@@ -54,7 +45,6 @@ void setup() {
   g_fe.colours = nullptr; g_fe.ncolours = 0; g_fe.timer_active = false;
   g_fe.status[0] = '\0';
 
-  Serial.printf("gamecount=%d\n", gamecount);
   openMenu();
 }
 
@@ -66,7 +56,7 @@ void loop() {
       puz::InputEvent ev = puz::eventForChar(c);
       if (ev.kind == puz::Ev::Up)   { g_sel = (g_sel + gamecount - 1) % gamecount; puz::drawMenu(g_sel); }
       if (ev.kind == puz::Ev::Down) { g_sel = (g_sel + 1) % gamecount;             puz::drawMenu(g_sel); }
-      if (ev.kind == puz::Ev::Select) { Serial.printf("SELECT idx=%d\n", g_sel); Serial.flush(); startGame(g_sel); }
+      if (ev.kind == puz::Ev::Select) startGame(g_sel);
     }
     delay(16);
     return;
