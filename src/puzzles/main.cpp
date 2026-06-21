@@ -18,7 +18,7 @@ static bool g_ptr_on = false;   // default cursor mode; 'p' toggles the tilt poi
 enum class State { MENU, PLAYING, COMMAND, TYPE_MENU, CONFIG_EDIT, HELP };
 static State g_state = State::MENU;
 static int g_sel = 0;
-static bool g_tab_seen = false;   // self-extinguishing toast flag (Task 9)
+static bool g_tab_seen = false;   // self-extinguishing splash flag (set on first Tab)
 
 // --- callbacks the params_ui screens invoke (bound per game in startGame) ---
 static void resumePlaying() { g_state = State::PLAYING; midend_force_redraw(g_me); g_last_ms = millis(); }
@@ -45,6 +45,16 @@ static void startGame(int idx) {
   g_fe.canvas->fillSprite(TFT_BLACK);   // clear stale pixels from the previous game
   midend_force_redraw(g_me);
   puz::uiBind({ g_me, &reloadResumePlaying, &resumePlaying, &toType, &toConfig, &togglePointer });
+  // One-shot discoverability splash, shown on game entry until Tab is first used.
+  if (!g_tab_seen) {
+    auto &d = M5.Display;
+    d.fillScreen(TFT_BLACK);
+    d.setTextSize(2); d.setTextColor(TFT_CYAN, TFT_BLACK); d.setTextDatum(middle_center);
+    d.drawString("Tab = menu", 120, 58);
+    d.setTextSize(1); d.setTextColor(d.color565(0x88, 0x99, 0xaa), TFT_BLACK);
+    d.drawString("options, size, undo...", 120, 82);
+    delay(1100);
+  }
   g_state = State::PLAYING;
   g_last_ms = millis();
 }
@@ -67,16 +77,19 @@ void setup() {
   openMenu();
 }
 
-static void drawHelpStub() {
+static void drawHelp() {
   auto &d = M5.Display;
   d.fillScreen(TFT_BLACK);
   d.setTextSize(1); d.setTextColor(TFT_CYAN, TFT_BLACK);
   d.setTextDatum(top_left); d.drawString("Controls", 4, 2);
   d.drawFastHLine(0, 12, 240, d.color565(0x24, 0x40, 0x55));
   d.setTextColor(TFT_WHITE, TFT_BLACK);
-  const char *L[] = {";/. , /  move cursor", "Enter / Space  select", "[ ]  pointer click L / R",
-                     "Ctrl+Z / Y  undo / redo", "Ctrl+N / R  new / restart", "Tab  menu (in game)", "`  back"};
-  for (int i = 0; i < 7; i++) d.drawString(L[i], 6, 18 + i * 15);
+  const char *L[] = {";,./        move cursor", "Enter/Space select / mark",
+                     "Ctrl+Z / Y  undo / redo", "Ctrl+N / R  new / restart",
+                     "Tab         menu (in game)", "p           tilt pointer"};
+  for (int i = 0; i < 6; i++) d.drawString(L[i], 6, 20 + i * 16);
+  d.setTextColor(d.color565(0x67, 0x88, 0x99), TFT_BLACK);
+  d.setTextDatum(bottom_left); d.drawString("` back", 4, 133);
 }
 
 static void handlePlaying(puz::InputEvent ev) {
@@ -118,7 +131,7 @@ void loop() {
       if (ev.kind == puz::Ev::Up)   { g_sel = (g_sel + gamecount - 1) % gamecount; puz::drawChooser(g_sel); }
       if (ev.kind == puz::Ev::Down) { g_sel = (g_sel + 1) % gamecount;             puz::drawChooser(g_sel); }
       if (ev.kind == puz::Ev::Select)      startGame(g_sel);
-      if (ev.kind == puz::Ev::CommandMenu) { g_state = State::HELP; drawHelpStub(); }
+      if (ev.kind == puz::Ev::CommandMenu) { g_state = State::HELP; drawHelp(); }
     }
     delay(16); return;
   }
