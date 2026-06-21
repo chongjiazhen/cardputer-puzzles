@@ -2,6 +2,9 @@
 extern "C" {
 #include "puzzles.h"
 }
+#undef min   // puzzles.h defines min/max macros that clobber STL <vector>/<algorithm>
+#undef max
+#include "input.h"   // puz::InputEvent/KeyPress (pulls <vector>)
 
 namespace puz {
 
@@ -19,5 +22,20 @@ config_item* configBegin(midend* me, char** title);      // = midend_get_config(
 const char*  configApply(midend* me, config_item* cfg);  // = midend_set_config; NULL ok, else err
 void         configFree(config_item* cfg);               // = free_cfg
 void         configStringEdit(config_item* ci, char c, bool backspace);  // grow/shrink C_STRING sval
+
+// --- UI screens (defined in ui_screens.cpp, device-only) ---
+// Frontend binds the active midend + callbacks before entering these states.
+struct UiCtx {
+  midend* me;
+  void (*reloadResume)();   // colours+size reload, then resume PLAYING (after a regen)
+  void (*resume)();         // resume PLAYING (no regen)
+  void (*toType)();         // set g_state = TYPE_MENU
+  void (*toConfig)();       // set g_state = CONFIG_EDIT
+  void (*togglePointer)();  // flip the tilt pointer
+};
+void uiBind(const UiCtx& c);
+void openCommand();  void commandKey(InputEvent ev);
+void openTypeMenu(); void typeKey(InputEvent ev);
+void openConfig();   void configKey(InputEvent ev);
 
 }  // namespace puz

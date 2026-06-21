@@ -15,7 +15,7 @@ inline const char** chooserNames() {
 inline void drawChooser(int sel) {
   static char pos[12];
   snprintf(pos, sizeof pos, "%d/%d", sel + 1, gamecount);
-  drawPicker(chooserNames(), gamecount, sel, "Puzzles", pos, nullptr);
+  drawPicker(chooserNames(), gamecount, sel, "Puzzles", pos, nullptr, 5);  // 5 rows: roomy after header+footer
   auto &d = M5.Display;                       // footer hint
   d.setTextSize(1); d.setTextColor(d.color565(0x67, 0x88, 0x99), TFT_BLACK);
   d.setTextDatum(bottom_left); d.drawString("Enter: play  Tab: help", 4, 133);

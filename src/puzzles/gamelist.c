@@ -14,8 +14,10 @@ extern const game undead, unruly, untangle;
  * upstream website. Display names differ from symbol names: rect="Rectangles",
  * samegame="Same Game", tracks="Train Tracks", lightup="Light Up". */
 const game *gamelist[] = {
+  /* galaxies excluded for v1: its generator exhausts S3 SRAM even at 5x5
+   * (OOM). Revisit once the canvas drops to 8bpp palette (Spec 2). */
   &blackbox, &bridges, &cube, &dominosa, &fifteen, &filling, &flip, &flood,
-  &galaxies, &guess, &inertia, &keen, &lightup, &loopy, &magnets, &map,
+  &guess, &inertia, &keen, &lightup, &loopy, &magnets, &map,
   &mines, &mosaic, &net, &netslide, &palisade, &pattern, &pearl, &pegs,
   &range, &rect, &samegame, &signpost, &singles, &sixteen, &slant, &solo,
   &tents, &towers, &tracks, &twiddle, &undead, &unequal, &unruly, &untangle,

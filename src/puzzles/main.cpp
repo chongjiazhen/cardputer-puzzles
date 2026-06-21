@@ -6,6 +6,7 @@
 #include "keymap.h"
 #include "input.h"
 #include "pointer.h"
+#include "params_ui.h"
 
 static frontend g_fe;
 static midend *g_me = nullptr;
@@ -19,6 +20,18 @@ static State g_state = State::MENU;
 static int g_sel = 0;
 static bool g_tab_seen = false;   // self-extinguishing toast flag (Task 9)
 
+// --- callbacks the params_ui screens invoke (bound per game in startGame) ---
+static void resumePlaying() { g_state = State::PLAYING; midend_force_redraw(g_me); g_last_ms = millis(); }
+static void reloadResumePlaying() {
+  frontend_load_colours(&g_fe, g_me);
+  int w = 240, h = 135; midend_size(g_me, &w, &h, true, 1.0);
+  g_fe.canvas->fillSprite(TFT_BLACK);
+  resumePlaying();
+}
+static void toType()   { g_state = State::TYPE_MENU; }
+static void toConfig() { g_state = State::CONFIG_EDIT; }
+static void togglePointer() { g_ptr_on = !g_ptr_on; }
+
 static void startGame(int idx) {
   if (g_me) { midend_free(g_me); g_me = nullptr; }
   g_me = midend_new(&g_fe, gamelist[idx], &cardputer_drawing_api, &g_fe);
@@ -31,6 +44,7 @@ static void startGame(int idx) {
   midend_size(g_me, &w, &h, true, 1.0);
   g_fe.canvas->fillSprite(TFT_BLACK);   // clear stale pixels from the previous game
   midend_force_redraw(g_me);
+  puz::uiBind({ g_me, &reloadResumePlaying, &resumePlaying, &toType, &toConfig, &togglePointer });
   g_state = State::PLAYING;
   g_last_ms = millis();
 }
@@ -53,21 +67,6 @@ void setup() {
   openMenu();
 }
 
-// Resume gameplay from a menu/overlay state.
-static void resumePlaying() { g_state = State::PLAYING; midend_force_redraw(g_me); g_last_ms = millis(); }
-
-// --- placeholder overlay screens; real Command/Type/Custom UI lands in Task 8 ---
-static void drawStub(const char *title) {
-  auto &d = M5.Display;
-  d.fillScreen(TFT_BLACK);
-  d.setTextSize(1); d.setTextColor(TFT_CYAN, TFT_BLACK);
-  d.setTextDatum(top_left); d.drawString(title, 4, 2);
-  d.drawFastHLine(0, 12, 240, d.color565(0x24, 0x40, 0x55));
-  d.setTextColor(TFT_WHITE, TFT_BLACK);
-  d.setTextDatum(middle_center); d.drawString("(wired in Task 8)", 120, 67);
-  d.setTextColor(d.color565(0x67, 0x88, 0x99), TFT_BLACK);
-  d.setTextDatum(bottom_left); d.drawString("` back", 4, 133);
-}
 static void drawHelpStub() {
   auto &d = M5.Display;
   d.fillScreen(TFT_BLACK);
@@ -84,7 +83,7 @@ static void handlePlaying(puz::InputEvent ev) {
   using puz::Ev;
   switch (ev.kind) {
     case Ev::BackToChooser: openMenu(); return;
-    case Ev::CommandMenu:   g_tab_seen = true; g_state = State::COMMAND; drawStub("Menu"); return;
+    case Ev::CommandMenu:   g_tab_seen = true; g_state = State::COMMAND; puz::openCommand(); return;
     case Ev::Select:        // Enter: pointer-click at crosshair if pointer on, else cursor-select
       if (g_ptr_on) {
         midend_process_key(g_me, (int)g_ptr.x, (int)g_ptr.y, LEFT_BUTTON);
@@ -128,9 +127,16 @@ void loop() {
       if (puz::eventForKey(k).kind == puz::Ev::BackToChooser) openMenu();
     delay(16); return;
   }
-  if (g_state == State::COMMAND || g_state == State::TYPE_MENU || g_state == State::CONFIG_EDIT) {
-    for (auto k : cardputer::keysJustPressedEx())
-      if (puz::eventForKey(k).kind == puz::Ev::BackToChooser) resumePlaying();
+  if (g_state == State::COMMAND) {
+    for (auto k : cardputer::keysJustPressedEx()) { puz::commandKey(puz::eventForKey(k)); if (g_state != State::COMMAND) break; }
+    delay(16); return;
+  }
+  if (g_state == State::TYPE_MENU) {
+    for (auto k : cardputer::keysJustPressedEx()) { puz::typeKey(puz::eventForKey(k)); if (g_state != State::TYPE_MENU) break; }
+    delay(16); return;
+  }
+  if (g_state == State::CONFIG_EDIT) {
+    for (auto k : cardputer::keysJustPressedEx()) { puz::configKey(puz::eventForKey(k)); if (g_state != State::CONFIG_EDIT) break; }
     delay(16); return;
   }
 

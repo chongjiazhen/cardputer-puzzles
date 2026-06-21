@@ -25,8 +25,9 @@ inline PickerWindow pickerWindow(int n, int sel, int maxRows) {
 }
 
 // Device render (defined in picker.cpp). suffix may be nullptr (no right column).
+// maxRows is the visible window size (row height adapts to fill the screen band).
 void drawPicker(const char* const* items, int n, int sel,
                 const char* title, const char* pos,
-                const char* const* suffix);
+                const char* const* suffix, int maxRows = 7);
 
 }  // namespace puz

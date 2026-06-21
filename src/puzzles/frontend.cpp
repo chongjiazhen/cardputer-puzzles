@@ -186,7 +186,16 @@ extern "C" void fatal(const char *fmt, ...) {
   va_list ap; va_start(ap, fmt);
   char buf[160]; vsnprintf(buf, sizeof buf, fmt, ap); va_end(ap);
   Serial.println(buf);
-  for (;;) delay(1000);
+  // Don't brick: show the error and reboot back to the chooser. (A game that
+  // exhausts SRAM mid-generation leaves the midend unrecoverable, so restart.)
+  M5.Display.fillScreen(TFT_BLACK);
+  M5.Display.setTextSize(1);
+  M5.Display.setTextColor(TFT_RED, TFT_BLACK);
+  M5.Display.setTextDatum(middle_center);
+  M5.Display.drawString(buf, 120, 58);
+  M5.Display.drawString("restarting...", 120, 76);
+  delay(2500);
+  ESP.restart();
 }
 extern "C" void frontend_default_colour(frontend *fe, float *output) {
   (void)fe;
