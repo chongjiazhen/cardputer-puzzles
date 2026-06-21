@@ -103,6 +103,19 @@ The game list and menus are a scrolling picker: `;`/`.` move, `Enter` selects,
 > The `;` `.` `,` `/` cursor cluster is confirmed on the ADV. `src/puzzles/keymap.h`
 > is the single place to remap keys.
 
+## Roadmap
+
+v1.0 ships the 39 games above with an on-device picker, a `Tab` command menu,
+preset/custom sizing, and a non-bricking error path. Planned next:
+
+- **8bpp render canvas** — frees ~32 KB SRAM; brings **Galaxies** back (its
+  generator currently OOMs the S3) and gives every game more headroom.
+- **Favorites / star** a game, pinned to the top of the list.
+- **Settings** — brightness, volume, default pointer (via `Tab` on the game list).
+- **Persistence** (NVS) — remember per-game size, resume a game in progress.
+- **Gyro recenter** — set the current tilt as neutral, so the pointer works in
+  any posture.
+
 ## Attribution
 
 Game logic and midend © Simon Tatham and contributors, vendored **unmodified** as a git submodule (`upstream/`) pinned at commit `7ad37c64`. Only the Cardputer frontend (`src/puzzles/`, `lib/`) is original to this project.
