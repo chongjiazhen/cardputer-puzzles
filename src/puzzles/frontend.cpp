@@ -32,38 +32,46 @@ static inline frontend *FE(drawing *dr) { return GET_HANDLE_AS_TYPE(dr, frontend
 
 // ---- drawing_api implementations ----
 
+// All puzzle coords are translated by (offX,offY) so the board sits centered
+// on the 240x135 canvas (set per game in startGame from midend_size).
+
 static void d_rect(drawing *dr, int x, int y, int w, int h, int c) {
-  FE(dr)->canvas->fillRect(x, y, w, h, FE(dr)->colours[c]);
+  frontend *fe = FE(dr);
+  fe->canvas->fillRect(x + fe->offX, y + fe->offY, w, h, fe->colours[c]);
 }
 
 static void d_line(drawing *dr, int x1, int y1, int x2, int y2, int c) {
-  FE(dr)->canvas->drawLine(x1, y1, x2, y2, FE(dr)->colours[c]);
+  frontend *fe = FE(dr);
+  fe->canvas->drawLine(x1 + fe->offX, y1 + fe->offY, x2 + fe->offX, y2 + fe->offY, fe->colours[c]);
 }
 
 static void d_circle(drawing *dr, int cx, int cy, int r, int fill, int outline) {
-  M5Canvas *cv = FE(dr)->canvas;
-  if (fill >= 0) cv->fillCircle(cx, cy, r, FE(dr)->colours[fill]);
-  cv->drawCircle(cx, cy, r, FE(dr)->colours[outline]);
+  frontend *fe = FE(dr); M5Canvas *cv = fe->canvas;
+  cx += fe->offX; cy += fe->offY;
+  if (fill >= 0) cv->fillCircle(cx, cy, r, fe->colours[fill]);
+  cv->drawCircle(cx, cy, r, fe->colours[outline]);
 }
 
 static void d_poly(drawing *dr, const int *coords, int np, int fill, int outline) {
-  M5Canvas *cv = FE(dr)->canvas;
+  frontend *fe = FE(dr); M5Canvas *cv = fe->canvas;
+  int ox = fe->offX, oy = fe->offY;
   if (fill >= 0) {  // convex fan from vertex 0
     for (int i = 1; i + 1 < np; i++)
-      cv->fillTriangle(coords[0], coords[1],
-                       coords[2*i], coords[2*i+1],
-                       coords[2*i+2], coords[2*i+3], FE(dr)->colours[fill]);
+      cv->fillTriangle(coords[0]+ox, coords[1]+oy,
+                       coords[2*i]+ox, coords[2*i+1]+oy,
+                       coords[2*i+2]+ox, coords[2*i+3]+oy, fe->colours[fill]);
   }
   for (int i = 0; i < np; i++) {  // outline, closed
     int j = (i + 1) % np;
-    cv->drawLine(coords[2*i], coords[2*i+1], coords[2*j], coords[2*j+1],
-                 FE(dr)->colours[outline]);
+    cv->drawLine(coords[2*i]+ox, coords[2*i+1]+oy, coords[2*j]+ox, coords[2*j+1]+oy,
+                 fe->colours[outline]);
   }
 }
 
 static void d_thick(drawing *dr, float th, float x1, float y1, float x2, float y2, int c) {
-  (void)th;
-  FE(dr)->canvas->drawLine((int)x1, (int)y1, (int)x2, (int)y2, FE(dr)->colours[c]);
+  (void)th; frontend *fe = FE(dr);
+  fe->canvas->drawLine((int)x1 + fe->offX, (int)y1 + fe->offY,
+                       (int)x2 + fe->offX, (int)y2 + fe->offY, fe->colours[c]);
 }
 
 // ---- text ----
@@ -84,13 +92,13 @@ static void d_text(drawing *dr, int x, int y, int fonttype, int fontsize,
   else if (align & ALIGN_HRIGHT)  datum = vc ? middle_right   : baseline_right;
   else                            datum = vc ? middle_left    : baseline_left;
   cv->setTextDatum(datum);
-  cv->drawString(text, x, y);
+  cv->drawString(text, x + FE(dr)->offX, y + FE(dr)->offY);
 }
 
 // ---- clip / update / start / end / status ----
 
 static void d_clip(drawing *dr, int x, int y, int w, int h) {
-  FE(dr)->canvas->setClipRect(x, y, w, h);
+  FE(dr)->canvas->setClipRect(x + FE(dr)->offX, y + FE(dr)->offY, w, h);
 }
 static void d_unclip(drawing *dr) { FE(dr)->canvas->clearClipRect(); }
 static void d_start(drawing *dr) {
@@ -126,12 +134,12 @@ static void bl_free(drawing *dr, blitter *bl) {
 }
 static void bl_save(drawing *dr, blitter *bl, int x, int y) {
   bl->x = x; bl->y = y;
-  FE(dr)->canvas->readRect(x, y, bl->w, bl->h, bl->buf);
+  FE(dr)->canvas->readRect(x + FE(dr)->offX, y + FE(dr)->offY, bl->w, bl->h, bl->buf);
 }
 static void bl_load(drawing *dr, blitter *bl, int x, int y) {
   if (x == BLITTER_FROMSAVED) x = bl->x;
   if (y == BLITTER_FROMSAVED) y = bl->y;
-  FE(dr)->canvas->pushImage(x, y, bl->w, bl->h, bl->buf);
+  FE(dr)->canvas->pushImage(x + FE(dr)->offX, y + FE(dr)->offY, bl->w, bl->h, bl->buf);
 }
 
 // ---- stubs for unused slots ----

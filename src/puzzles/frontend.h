@@ -12,6 +12,7 @@ struct frontend {
   int ncolours;
   bool timer_active;
   char status[64];
+  int offX, offY;      // centering offset: puzzle drawn at (offX,offY) on the 240x135 canvas
 };
 
 extern "C" const drawing_api cardputer_drawing_api;

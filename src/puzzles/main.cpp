@@ -42,6 +42,7 @@ static void startGame(int idx) {
   frontend_load_colours(&g_fe, g_me);
   int w = 240, h = 135;
   midend_size(g_me, &w, &h, true, 1.0);
+  g_fe.offX = (240 - w) / 2; g_fe.offY = (135 - h) / 2;   // center the board on screen
   g_fe.canvas->fillSprite(TFT_BLACK);   // clear stale pixels from the previous game
   midend_force_redraw(g_me);
   puz::uiBind({ g_me, &reloadResumePlaying, &resumePlaying, &toType, &toConfig, &togglePointer });
@@ -100,14 +101,16 @@ static void handlePlaying(puz::InputEvent ev) {
     case Ev::CommandMenu:   g_tab_seen = true; g_state = State::COMMAND; puz::openCommand(); return;
     case Ev::Select:        // Enter: pointer-click at crosshair if pointer on, else cursor-select
       if (g_ptr_on) {
-        midend_process_key(g_me, (int)g_ptr.x, (int)g_ptr.y, LEFT_BUTTON);
-        midend_process_key(g_me, (int)g_ptr.x, (int)g_ptr.y, LEFT_RELEASE);
+        int px = (int)g_ptr.x - g_fe.offX, py = (int)g_ptr.y - g_fe.offY;  // screen -> puzzle coords
+        midend_process_key(g_me, px, py, LEFT_BUTTON);
+        midend_process_key(g_me, px, py, LEFT_RELEASE);
       } else midend_process_key(g_me, 0, 0, CURSOR_SELECT);
       return;
     case Ev::Select2:       // Space: pointer right-click if pointer on, else cursor-select2
       if (g_ptr_on) {
-        midend_process_key(g_me, (int)g_ptr.x, (int)g_ptr.y, RIGHT_BUTTON);
-        midend_process_key(g_me, (int)g_ptr.x, (int)g_ptr.y, RIGHT_RELEASE);
+        int px = (int)g_ptr.x - g_fe.offX, py = (int)g_ptr.y - g_fe.offY;
+        midend_process_key(g_me, px, py, RIGHT_BUTTON);
+        midend_process_key(g_me, px, py, RIGHT_RELEASE);
       } else midend_process_key(g_me, 0, 0, CURSOR_SELECT2);
       return;
     case Ev::Restart: midend_restart_game(g_me); return;
