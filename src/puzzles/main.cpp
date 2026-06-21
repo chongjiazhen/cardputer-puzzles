@@ -22,9 +22,17 @@ static bool g_tab_seen = false;   // self-extinguishing splash flag (set on firs
 
 // --- callbacks the params_ui screens invoke (bound per game in startGame) ---
 static void resumePlaying() { g_state = State::PLAYING; midend_force_redraw(g_me); g_last_ms = millis(); }
+// Recompute board size and re-center on the 240x135 canvas. Must run after any
+// midend_size-changing event (new game, preset/config apply); otherwise offX/offY
+// go stale and both rendering and pointer-click translation use the old centering.
+static void sizeAndCenter() {
+  int w = 240, h = 135;
+  midend_size(g_me, &w, &h, true, 1.0);
+  g_fe.offX = (240 - w) / 2; g_fe.offY = (135 - h) / 2;
+}
 static void reloadResumePlaying() {
   frontend_load_colours(&g_fe, g_me);
-  int w = 240, h = 135; midend_size(g_me, &w, &h, true, 1.0);
+  sizeAndCenter();
   g_fe.canvas->fillSprite(TFT_BLACK);
   resumePlaying();
 }
@@ -40,9 +48,7 @@ static void startGame(int idx) {
     midend_game_id(g_me, p);  // returns nullptr on success; on error params stay default
   midend_new_game(g_me);
   frontend_load_colours(&g_fe, g_me);
-  int w = 240, h = 135;
-  midend_size(g_me, &w, &h, true, 1.0);
-  g_fe.offX = (240 - w) / 2; g_fe.offY = (135 - h) / 2;   // center the board on screen
+  sizeAndCenter();
   g_fe.canvas->fillSprite(TFT_BLACK);   // clear stale pixels from the previous game
   midend_force_redraw(g_me);
   puz::uiBind({ g_me, &reloadResumePlaying, &resumePlaying, &toType, &toConfig, &togglePointer });
@@ -116,7 +122,7 @@ static void handlePlaying(puz::InputEvent ev) {
     case Ev::Restart: midend_restart_game(g_me); return;
     case Ev::NewGame:
       midend_new_game(g_me); frontend_load_colours(&g_fe, g_me);
-      { int w = 240, h = 135; midend_size(g_me, &w, &h, true, 1.0); }
+      sizeAndCenter();
       midend_force_redraw(g_me); return;
     default: {
       int btn = puz::midendButton(ev);   // cursor/select/select2/char/undo/redo/solve
