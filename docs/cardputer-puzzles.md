@@ -17,49 +17,28 @@ Upstream: https://www.chiark.greenend.org.uk/~sgtatham/puzzles/
 
 ## Controls
 
-All key mappings are defined in `src/puzzles/keymap.h` — that is the single file to edit if keycodes need adjustment.
-
-| Key | Action |
-|---|---|
-| `;` | Cursor up |
-| `.` | Cursor down |
-| `,` | Cursor left |
-| `/` | Cursor right |
-| `Enter` (`\r` / `\n`) | Left-click / select |
-| `Space` | Right-click / select2 |
-| Digits `0`–`9` | Per-game digit entry |
-| Letters `a`–`z`, `A`–`Z` | Per-game letter entry |
-| `u` | Undo |
-| `r` | Redo |
-| `n` | New game |
-| `s` | Solve (where the game supports it) |
-| `k` | Pointer left-click (at current pointer position) |
-| `l` | Pointer right-click (at current pointer position) |
-| `p` | Toggle IMU tilt pointer on/off |
-| `` ` `` | Back to game chooser menu |
-
-### Arrow key note (ADV provisional mapping)
-
-The `;` `.` `,` `/` cluster is used for cursor up/down/left/right because those are the characters the Cardputer ADV keyboard reports for those physical keys in the current firmware. **This mapping must be confirmed on hardware.** If the ADV reports different codes (e.g. Fn-modified sequences), update `keymap.h` — it is the single place to change.
+See the **[Controls table in the README](../README.md#controls)** — that is the
+single source of truth. In brief: every plain key goes to the puzzle; frontend
+commands live on `Ctrl`, `Tab`, and `` ` ``. The `;` `.` `,` `/` cluster moves
+the cursor; `Enter`/`Space` select; `Tab` opens the in-game menu (size/type, new,
+restart, solve, undo/redo, pointer). All mappings are defined in
+`src/puzzles/keymap.h` — the single place to remap keys.
 
 ### IMU tilt pointer
 
-Press `p` to toggle the gyroscope/accelerometer tilt pointer. When active, tilting the device moves a crosshair cursor on screen. Press `k` or `l` to click at the pointer position. This is useful for games that take direct coordinate input (e.g. Mines, Light Up).
+Press `p` to toggle the gyroscope/accelerometer tilt pointer. When active,
+tilting the device moves a crosshair cursor on screen; press `Enter` or `Space`
+to click (left / right) at the crosshair. Useful for games that take direct
+coordinate input (e.g. Mines, Light Up).
 
 ---
 
 ## Included games
 
-| Game | Description |
-|---|---|
-| **Net** | Rotate tiles to connect all nodes to the central hub |
-| **Mines** | Minesweeper — flag or uncover cells by mine count clues |
-| **Solo** | Sudoku — fill grids so each digit appears once per row, column, and block |
-| **Light Up** | Place lightbulbs to illuminate every white cell without bulbs seeing each other |
-| **Filling** | Fill each region with a digit equal to the region's area |
-| **Bridges** | Connect islands with bridges so each island has the right count |
-| **Unequal** | Futoshiki — place digits respecting the inequality signs between cells |
-| **Tents** | Place tents adjacent to trees, satisfying row and column tent counts |
+39 of Tatham's puzzles ship in v1.0 — browse them in the on-device picker, or see
+the full list in the [README](../README.md#included-games-39). (Galaxies is
+temporarily excluded while its generator is too memory-hungry for the S3; see the
+roadmap.)
 
 ---
 

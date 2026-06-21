@@ -120,4 +120,4 @@ preset/custom sizing, and a non-bricking error path. Planned next:
 
 Game logic and midend © Simon Tatham and contributors, vendored **unmodified** as a git submodule (`upstream/`) pinned at commit `7ad37c64`. Only the Cardputer frontend (`src/puzzles/`, `lib/`) is original to this project.
 
-See [LICENSE](LICENSE) for the full MIT licence text.
+The frontend is MIT — see [LICENSE](LICENSE). The vendored puzzles keep their own MIT licence and copyright in [upstream/LICENCE](upstream/LICENCE).
