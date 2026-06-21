@@ -110,7 +110,18 @@ static void d_start(drawing *dr) {
   FE(dr)->canvas->clearClipRect();
 }
 static void d_end(drawing *dr) {
-  FE(dr)->canvas->pushSprite(&M5.Display, 0, 0);
+  frontend *fe = FE(dr);
+  fe->canvas->pushSprite(&M5.Display, 0, 0);
+  // Status overlay: games report win/lose/score/counters via status_bar (d_status).
+  // Paint it as a bottom strip over the freshly-pushed frame. Drawn every redraw,
+  // so it tracks live; when status clears, the next full pushSprite wipes it.
+  if (fe->status[0]) {
+    auto &d = M5.Display;
+    d.fillRect(0, 124, 240, 11, TFT_BLACK);   // dark strip for legibility over board
+    d.setTextSize(1); d.setTextColor(TFT_WHITE, TFT_BLACK);
+    d.setTextDatum(bottom_left);
+    d.drawString(fe->status, 2, 134);
+  }
 }
 static void d_update(drawing *dr, int, int, int, int) { (void)dr; }
 static void d_status(drawing *dr, const char *t) {
