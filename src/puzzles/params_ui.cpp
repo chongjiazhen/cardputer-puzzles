@@ -51,6 +51,7 @@ void configStringEdit(config_item* ci, char c, bool backspace) {
     if (len) s[len - 1] = '\0';
   } else {
     char* ns = (char*)realloc(s, len + 2);  // midend smalloc == malloc, realloc-safe
+    if (!ns) return;                        // OOM: keep existing string, drop keystroke
     ns[len] = c; ns[len + 1] = '\0';
     ci->u.string.sval = ns;
   }

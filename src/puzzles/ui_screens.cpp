@@ -125,6 +125,7 @@ static void drawConfig() {
 
 void openConfig() {
   if (g_cfg) configFree(g_cfg);
+  free(g_cfgTitle); g_cfgTitle = nullptr;   // title is caller-owned; free prior fetch
   g_cfgErr = nullptr; g_cfgSel = 0;
   g_cfg = configBegin(g_ui.me, &g_cfgTitle);
   g_cfgN = cfgCount(g_cfg);
@@ -158,11 +159,11 @@ void configKey(InputEvent ev) {
     case Ev::Select: {   // apply all
       const char* err = configApply(g_ui.me, g_cfg);
       if (err) { g_cfgErr = err; drawConfig(); }
-      else { configFree(g_cfg); g_cfg = nullptr; g_ui.reloadResume(); }
+      else { configFree(g_cfg); g_cfg = nullptr; free(g_cfgTitle); g_cfgTitle = nullptr; g_ui.reloadResume(); }
       break;
     }
     case Ev::BackToChooser:   // cancel
-      configFree(g_cfg); g_cfg = nullptr; g_ui.resume(); break;
+      configFree(g_cfg); g_cfg = nullptr; free(g_cfgTitle); g_cfgTitle = nullptr; g_ui.resume(); break;
     default: break;
   }
 }
