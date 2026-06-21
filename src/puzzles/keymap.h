@@ -57,8 +57,6 @@ inline InputEvent eventForKey(KeyPress k) {
     case '/': return {Ev::Right, 0};
     case '\r': case '\n': return {Ev::Select, 0};
     case ' ':  return {Ev::Select2, 0};
-    case '[':  return {Ev::ClickL, 0};
-    case ']':  return {Ev::ClickR, 0};
     case '\t': return {Ev::CommandMenu, 0};
     case '`':  return {Ev::BackToChooser, 0};
     default:   return {Ev::Char, k.ch};   // digits, letters, '\b' → game

@@ -1,24 +1,24 @@
 #pragma once
-#include "frontend.h"
-
-// gamelist[] and gamecount are declared by puzzles.h (included via frontend.h)
+#include "picker.h"
+#include "frontend.h"   // gamelist[]/gamecount (puzzles.h) + M5.Display
 
 namespace puz {
-inline void drawMenu(int sel) {
-  auto &d = M5.Display;
-  d.fillScreen(TFT_BLACK);
-  d.setTextSize(1);
-  d.setTextDatum(top_left);
-  const int rowH = 14, top = 4;
-  const int rows = (d.height() - top) / rowH;   // items that fit on screen
-  int first = sel - rows / 2;                    // scroll window, sel centered
-  if (first > gamecount - rows) first = gamecount - rows;
-  if (first < 0) first = 0;
-  for (int r = 0; r < rows && first + r < gamecount; r++) {
-    int i = first + r;
-    d.setTextColor(i == sel ? TFT_BLACK : TFT_WHITE,
-                   i == sel ? TFT_WHITE : TFT_BLACK);
-    d.drawString(gamelist[i]->name, 6, top + r * rowH);
-  }
+
+// Display names cached once (gamelist order is the alphabetical menu order).
+inline const char** chooserNames() {
+  static const char* names[64];
+  static bool init = false;
+  if (!init) { for (int i = 0; i < gamecount; i++) names[i] = gamelist[i]->name; init = true; }
+  return names;
 }
+
+inline void drawChooser(int sel) {
+  static char pos[12];
+  snprintf(pos, sizeof pos, "%d/%d", sel + 1, gamecount);
+  drawPicker(chooserNames(), gamecount, sel, "Puzzles", pos, nullptr);
+  auto &d = M5.Display;                       // footer hint
+  d.setTextSize(1); d.setTextColor(d.color565(0x67, 0x88, 0x99), TFT_BLACK);
+  d.setTextDatum(bottom_left); d.drawString("Enter: play  Tab: help", 4, 133);
+}
+
 }  // namespace puz

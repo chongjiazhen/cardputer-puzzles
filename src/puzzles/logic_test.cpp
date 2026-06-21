@@ -34,8 +34,8 @@ static void test_eventForKey() {
     CHECK(eventForKey({'/',false}).kind == Ev::Right);
     CHECK(eventForKey({'\r',false}).kind == Ev::Select);
     CHECK(eventForKey({' ',false}).kind == Ev::Select2);
-    CHECK(eventForKey({'[',false}).kind == Ev::ClickL);
-    CHECK(eventForKey({']',false}).kind == Ev::ClickR);
+    CHECK(eventForKey({'[',false}).kind == Ev::Char);   // brackets now fall through to the game
+    CHECK(eventForKey({']',false}).kind == Ev::Char);
     CHECK(eventForKey({'\t',false}).kind == Ev::CommandMenu);
     CHECK(eventForKey({'`',false}).kind == Ev::BackToChooser);
     CHECK(eventForKey({'z',true}).kind == Ev::Undo);
