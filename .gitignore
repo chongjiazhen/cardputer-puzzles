@@ -14,3 +14,6 @@ run_input_test.bat
 
 # host-test helper (local)
 run_host_test.sh
+
+# machine-specific Claude notes (local)
+CLAUDE.local.md

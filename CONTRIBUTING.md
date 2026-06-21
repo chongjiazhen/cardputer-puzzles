@@ -43,6 +43,9 @@ Build/flash and run the host tests per the [README](README.md). Before a PR:
 
 ## Scope
 
-Game logic + the midend are upstream (Simon Tatham's collection, vendored
-unmodified). Bugs in a *puzzle's rules* go upstream; this repo owns the
-Cardputer frontend (`src/puzzles/`, `lib/`) — rendering, input, menus, sizing.
+The game logic and midend come from Simon Tatham's Portable Puzzle Collection —
+a remarkably stable, well-loved body of work we vendor unmodified and gratefully
+build on. A bug in a *puzzle's own rules* is rare and belongs upstream; this port
+deliberately leaves that layer untouched. What this repo owns is the Cardputer
+frontend (`src/puzzles/`, `lib/`) — rendering, input, menus, sizing — so that's
+where your reports and PRs are most useful.
