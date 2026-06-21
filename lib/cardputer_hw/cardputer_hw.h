@@ -28,8 +28,6 @@ std::vector<char> keysJustPressed();
 // Modifier-aware variant: printable chars carry the Ctrl flag; Enter/Del/Tab
 // arrive as the '\r'/'\b'/'\t' sentinels. Preferred for the puzzle frontend.
 std::vector<puz::KeyPress> keysJustPressedEx();
-// Convenience: blocking line input rendered to screen. Returns on Enter.
-String readLine(const String& prompt = "");
 
 // --- display ---
 void brightness(uint8_t level);   // 0..255, persisted in NVS by caller if wanted

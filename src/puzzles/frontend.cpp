@@ -20,6 +20,7 @@ extern "C" void frontend_load_colours(frontend *fe, midend *me) {
   float *fl = midend_colours(me, &n);
   free(fe->colours);
   fe->colours = (uint16_t *)malloc(sizeof(uint16_t) * n);
+  if (!fe->colours) fatal("frontend_load_colours: out of memory");
   fe->ncolours = n;
   for (int i = 0; i < n; i++)
     fe->colours[i] = rgb565(fl[i*3+0], fl[i*3+1], fl[i*3+2]);
@@ -124,8 +125,10 @@ struct blitter { int w, h, x, y; uint16_t *buf; };
 static blitter *bl_new(drawing *dr, int w, int h) {
   (void)dr;
   blitter *bl = (blitter *)malloc(sizeof(blitter));
+  if (!bl) fatal("bl_new: out of memory");
   bl->w = w; bl->h = h; bl->x = bl->y = -1;
   bl->buf = (uint16_t *)malloc(sizeof(uint16_t) * w * h);
+  if (!bl->buf) fatal("bl_new: out of memory");
   return bl;
 }
 static void bl_free(drawing *dr, blitter *bl) {

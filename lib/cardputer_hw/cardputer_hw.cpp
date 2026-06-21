@@ -40,28 +40,6 @@ std::vector<puz::KeyPress> keysJustPressedEx() {
   return puz::buildKeyPresses(s.word, s.ctrl, s.enter, s.del, s.tab);
 }
 
-String readLine(const String& prompt) {
-  String buf;
-  M5.Display.fillScreen(TFT_BLACK);
-  M5.Display.setCursor(0, 0);
-  M5.Display.print(prompt);
-  for (;;) {
-    update();
-    if (M5Cardputer.Keyboard.isChange() && M5Cardputer.Keyboard.isPressed()) {
-      auto status = M5Cardputer.Keyboard.keysState();
-      if (status.enter) break;
-      if (status.del && buf.length()) buf.remove(buf.length() - 1);
-      for (auto c : status.word) buf += c;
-      M5.Display.fillScreen(TFT_BLACK);
-      M5.Display.setCursor(0, 0);
-      M5.Display.print(prompt);
-      M5.Display.print(buf);
-    }
-    delay(5);
-  }
-  return buf;
-}
-
 void brightness(uint8_t level) { g_brightness = level; M5.Display.setBrightness(level); }
 uint8_t brightness() { return g_brightness; }
 
