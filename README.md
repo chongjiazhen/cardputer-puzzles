@@ -4,16 +4,20 @@ Simon Tatham's Portable Puzzle Collection ported to the **M5Stack Cardputer ADV*
 
 Upstream project: https://www.chiark.greenend.org.uk/~sgtatham/puzzles/
 
-## Included games (40)
+## Included games (39)
 
-All 40 puzzles from Simon Tatham's collection (excludes `nullgame`):
+Simon Tatham's collection, alphabetical:
 
 Black Box · Bridges · Cube · Dominosa · Fifteen · Filling · Flip · Flood ·
-Galaxies · Guess · Inertia · Keen · Light Up · Loopy · Magnets · Map ·
-Mines · Mosaic · Net · Netslide · Palisade · Pattern · Pearl · Pegs ·
-Range · Rectangles · Same Game · Signpost · Singles · Sixteen · Slant ·
-Solo · Tents · Towers · Train Tracks · Twiddle · Undead · Unequal ·
-Unruly · Untangle
+Guess · Inertia · Keen · Light Up · Loopy · Magnets · Map · Mines · Mosaic ·
+Net · Netslide · Palisade · Pattern · Pearl · Pegs · Range · Rectangles ·
+Same Game · Signpost · Singles · Sixteen · Slant · Solo · Tents · Towers ·
+Train Tracks · Twiddle · Undead · Unequal · Unruly · Untangle
+
+> **Galaxies** is temporarily excluded: its generator exhausts the S3's SRAM
+> even at small sizes. It returns once the render canvas drops to an 8bpp
+> palette (frees ~32 KB). Any game that does run out of memory shows an error
+> and reboots to the menu rather than hanging.
 
 ## Hardware
 
@@ -78,25 +82,26 @@ Note: `hat.c` and `spectre.c` are tiling libraries (not games) — compiled in f
 
 ## Controls
 
+Every plain key goes to the puzzle (so games that use letters — Map's `l`,
+Solo's hex digits, etc. — work). Frontend commands live on Ctrl, Tab, and `` ` ``.
+
 | Key | Action |
 |---|---|
-| `;` | Cursor up |
-| `.` | Cursor down |
-| `,` | Cursor left |
-| `/` | Cursor right |
-| `Enter` | Left-click / select |
-| `Space` | Right-click / select2 |
-| digits / letters | Per-game entry |
-| `u` | Undo |
-| `r` | Redo |
-| `n` | New game |
-| `s` | Solve |
-| `k` | Pointer left-click |
-| `l` | Pointer right-click |
-| `p` | Toggle IMU tilt pointer |
-| `` ` `` | Back to game menu |
+| `;` `.` `,` `/` | Move cursor (up / down / left / right) |
+| `Enter` | Select (cursor cell, or click at the crosshair in pointer mode) |
+| `Space` | Select2 / mark (flag, pencil, …) |
+| digits / letters / `⌫` | Per-game input |
+| `Ctrl`+`Z` / `Ctrl`+`Y` | Undo / Redo |
+| `Ctrl`+`N` / `Ctrl`+`R` | New game / Restart |
+| `Tab` | **Menu** (in game: size/type, new, restart, solve, undo/redo, pointer) · **Help** (on the game list) |
+| `p` | Toggle the IMU tilt pointer (then Enter/Space click at the crosshair) |
+| `` ` `` | Back (to the game list / out of a menu) |
 
-> **Note:** The `;` `.` `,` `/` arrow-key mapping is provisional. On the ADV the Fn-modified key codes must be confirmed on hardware. `src/puzzles/keymap.h` is the single place to adjust them.
+The game list and menus are a scrolling picker: `;`/`.` move, `Enter` selects,
+`` ` `` backs out. Press `Tab` in a game for the menu; `Tab` on the list for help.
+
+> The `;` `.` `,` `/` cursor cluster is confirmed on the ADV. `src/puzzles/keymap.h`
+> is the single place to remap keys.
 
 ## Attribution
 
