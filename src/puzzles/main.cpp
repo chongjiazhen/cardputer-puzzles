@@ -26,9 +26,16 @@ static void resumePlaying() { g_state = State::PLAYING; midend_force_redraw(g_me
 // midend_size-changing event (new game, preset/config apply); otherwise offX/offY
 // go stale and both rendering and pointer-click translation use the old centering.
 static void sizeAndCenter() {
-  int w = 240, h = 135;
+  // Reserve an 11px bottom strip for the status bar on games that use one, so the
+  // board centers above it instead of being overdrawn by the overlay (see d_end).
+  // Games with no status bar keep the full 135px height. Clear any status text left
+  // over from a previous game so it can't bleed onto a no-statusbar board.
+  g_fe.statusbar = midend_wants_statusbar(g_me);
+  g_fe.status[0] = '\0';
+  int avail = g_fe.statusbar ? 135 - 11 : 135;
+  int w = 240, h = avail;
   midend_size(g_me, &w, &h, true, 1.0);
-  g_fe.offX = (240 - w) / 2; g_fe.offY = (135 - h) / 2;
+  g_fe.offX = (240 - w) / 2; g_fe.offY = (avail - h) / 2;
 }
 static void reloadResumePlaying() {
   frontend_load_colours(&g_fe, g_me);
@@ -80,6 +87,7 @@ void setup() {
   if (!g_fe.canvas->createSprite(240, 135))
     fatal("canvas createSprite failed - not enough SRAM");
   g_fe.colours = nullptr; g_fe.ncolours = 0; g_fe.timer_active = false;
+  g_fe.statusbar = false;
   g_fe.status[0] = '\0';
 
   openMenu();

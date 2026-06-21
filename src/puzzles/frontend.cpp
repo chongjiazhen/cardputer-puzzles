@@ -111,17 +111,22 @@ static void d_start(drawing *dr) {
 }
 static void d_end(drawing *dr) {
   frontend *fe = FE(dr);
-  fe->canvas->pushSprite(&M5.Display, 0, 0);
-  // Status overlay: games report win/lose/score/counters via status_bar (d_status).
-  // Paint it as a bottom strip over the freshly-pushed frame. Drawn every redraw,
-  // so it tracks live; when status clears, the next full pushSprite wipes it.
-  if (fe->status[0]) {
-    auto &d = M5.Display;
-    d.fillRect(0, 124, 240, 11, TFT_BLACK);   // dark strip for legibility over board
-    d.setTextSize(1); d.setTextColor(TFT_WHITE, TFT_BLACK);
-    d.setTextDatum(bottom_left);
-    d.drawString(fe->status, 2, 134);
+  // Status bar: only games that declare wants_statusbar reserve the bottom strip
+  // (sizeAndCenter keeps the board above y=124 for them). Paint it INTO the canvas
+  // so the whole frame pushes atomically in one pushSprite -- drawing straight to
+  // the panel after the push tears (two unsynchronized LCD writes per redraw show
+  // as a flickering diagonal seam). Clear the strip every frame so old text can't
+  // linger when the game's status string goes empty.
+  if (fe->statusbar) {
+    M5Canvas *cv = fe->canvas;
+    cv->fillRect(0, 124, 240, 11, TFT_BLACK);   // reserved strip
+    if (fe->status[0]) {
+      cv->setTextSize(1); cv->setTextColor(TFT_WHITE, TFT_BLACK);
+      cv->setTextDatum(bottom_left);
+      cv->drawString(fe->status, 2, 134);
+    }
   }
+  fe->canvas->pushSprite(&M5.Display, 0, 0);
 }
 static void d_update(drawing *dr, int, int, int, int) { (void)dr; }
 static void d_status(drawing *dr, const char *t) {
