@@ -45,7 +45,7 @@ static void startGame(int idx) {
   g_fe.canvas->fillSprite(TFT_BLACK);   // clear stale pixels from the previous game
   midend_force_redraw(g_me);
   puz::uiBind({ g_me, &reloadResumePlaying, &resumePlaying, &toType, &toConfig, &togglePointer });
-  // One-shot discoverability splash, shown on game entry until Tab is first used.
+  // One-shot discoverability splash: shown on the first game entry per boot, then never again.
   if (!g_tab_seen) {
     auto &d = M5.Display;
     d.fillScreen(TFT_BLACK);
@@ -54,6 +54,7 @@ static void startGame(int idx) {
     d.setTextSize(1); d.setTextColor(d.color565(0x88, 0x99, 0xaa), TFT_BLACK);
     d.drawString("options, size, undo...", 120, 82);
     delay(1100);
+    g_tab_seen = true;   // shown once; don't nag again this session
   }
   g_state = State::PLAYING;
   g_last_ms = millis();
