@@ -150,7 +150,9 @@ static void bl_load(drawing *dr, blitter *bl, int x, int y) {
 static void d_linewidth(drawing*, float) {}
 static void d_linedotted(drawing*, bool) {}
 static char *d_textfallback(drawing*, const char *const *s, int n) {
-  return s && n > 0 && s[0] ? strdup(s[0]) : strdup("");
+  char *r = s && n > 0 && s[0] ? strdup(s[0]) : strdup("");
+  if (!r) fatal("d_textfallback: out of memory");
+  return r;
 }
 
 // ---- drawing_api table ----
@@ -214,6 +216,7 @@ extern "C" void frontend_default_colour(frontend *fe, float *output) {
 }
 extern "C" void get_random_seed(void **randseed, int *randseedsize) {
   uint32_t *s = (uint32_t *)malloc(2 * sizeof(uint32_t));  // midend_new calls sfree() on this
+  if (!s) fatal("get_random_seed: out of memory");
   s[0] = esp_random(); s[1] = esp_random();
   *randseed = s; *randseedsize = 2 * (int)sizeof(uint32_t);
 }
