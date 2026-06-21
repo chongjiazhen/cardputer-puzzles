@@ -17,3 +17,6 @@ run_host_test.sh
 
 # machine-specific Claude notes (local)
 CLAUDE.local.md
+
+# agent execution runbooks — kept local, not public (stale once work lands; specs/ is the design record)
+docs/design/plans/
