@@ -26,7 +26,7 @@ restart, solve, undo/redo, pointer). All mappings are defined in
 
 ### IMU tilt pointer
 
-Press `p` to toggle the gyroscope/accelerometer tilt pointer. When active,
+Press `Ctrl+P` to toggle the gyroscope/accelerometer tilt pointer. When active,
 tilting the device moves a crosshair cursor on screen; press `Enter` or `Space`
 to click (left / right) at the crosshair. Useful for games that take direct
 coordinate input (e.g. Mines, Light Up).

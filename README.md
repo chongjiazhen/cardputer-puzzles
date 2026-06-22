@@ -94,7 +94,7 @@ Solo's hex digits, etc. — work). Frontend commands live on Ctrl, Tab, and `` `
 | `Ctrl`+`Z` / `Ctrl`+`Y` | Undo / Redo |
 | `Ctrl`+`N` / `Ctrl`+`R` | New game / Restart |
 | `Tab` | **Menu** (in game: size/type, new, restart, solve, undo/redo, pointer) · **Help** (on the game list) |
-| `p` | Toggle the IMU tilt pointer (then Enter/Space click at the crosshair) |
+| `Ctrl`+`P` | Toggle the IMU tilt pointer (then Enter/Space click at the crosshair) |
 | `` ` `` | Back (to the game list / out of a menu) |
 
 The game list and menus are a scrolling picker: `;`/`.` move, `Enter` selects,

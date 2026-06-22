@@ -13,7 +13,7 @@ static midend *g_me = nullptr;
 static uint32_t g_last_ms;
 
 static puz::Pointer g_ptr{120, 67};
-static bool g_ptr_on = false;   // default cursor mode; 'p' toggles the tilt pointer
+static bool g_ptr_on = false;   // default cursor mode; Ctrl+P toggles the tilt pointer
 
 enum class State { MENU, PLAYING, COMMAND, TYPE_MENU, CONFIG_EDIT, HELP };
 static State g_state = State::MENU;
@@ -102,7 +102,7 @@ static void drawHelp() {
   d.setTextColor(TFT_WHITE, TFT_BLACK);
   const char *L[] = {";,./        move cursor", "Enter/Space select / mark",
                      "Ctrl+Z / Y  undo / redo", "Ctrl+N / R  new / restart",
-                     "Tab         menu (in game)", "p           tilt pointer"};
+                     "Tab         menu (in game)", "Ctrl+P      tilt pointer"};
   for (int i = 0; i < 6; i++) d.drawString(L[i], 6, 20 + i * 16);
   d.setTextColor(d.color565(0x67, 0x88, 0x99), TFT_BLACK);
   d.setTextDatum(bottom_left); d.drawString("` back", 4, 133);
@@ -180,7 +180,7 @@ void loop() {
     puz::pointerStep(g_ptr, -imu.ax, imu.ay, dt, 240, 135);  // ADV accel X inverted vs screen
 
   for (auto k : cardputer::keysJustPressedEx()) {
-    if (k.ch == 'p' && !k.ctrl) { g_ptr_on = !g_ptr_on; continue; }  // pointer toggle (PLAYING only)
+    if (k.ch == 'p' && k.ctrl) { g_ptr_on = !g_ptr_on; continue; }  // Ctrl+P pointer toggle (plain 'p' belongs to the game)
     handlePlaying(puz::eventForKey(k));
     if (g_state != State::PLAYING) return;   // a handler changed state
   }

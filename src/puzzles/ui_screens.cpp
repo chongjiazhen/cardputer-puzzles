@@ -12,7 +12,7 @@ void uiBind(const UiCtx& c) { g_ui = c; }
 
 // ---------------- command menu ----------------
 static const char* kCmdItems[]  = {"Size / Type","New game","Restart","Solve","Undo","Redo","Pointer"};
-static const char* kCmdSuffix[] = {"",           "Ctrl+N",  "Ctrl+R", "",     "Ctrl+Z","Ctrl+Y","p"};
+static const char* kCmdSuffix[] = {"",           "Ctrl+N",  "Ctrl+R", "",     "Ctrl+Z","Ctrl+Y","Ctrl+P"};
 static const int   kCmdN = 7;
 static int g_cmdSel = 0;
 
