@@ -1,12 +1,14 @@
 .pio/
 *.bin
 # host test build artifacts
+*.o
+*.obj
+*.exe
 src/puzzles/input_test
-src/puzzles/input_test.exe
 src/puzzles/input_test_run.exe
 src/puzzles/pointer_test
-src/puzzles/pointer_test.exe
-*.obj
+src/puzzles/logic_test
+src/puzzles/startgame_test
 run_input_test.bat
 
 # brainstorming visual companion (local only)
