@@ -24,9 +24,8 @@ void update();
 // caller just reads characters.
 bool keyPressed();
 // Characters entered since last update() (already de-bounced by M5).
-std::vector<char> keysJustPressed();
-// Modifier-aware variant: printable chars carry the Ctrl flag; Enter/Del/Tab
-// arrive as the '\r'/'\b'/'\t' sentinels. Preferred for the puzzle frontend.
+// Printable chars carry the Ctrl flag; Enter/Del/Tab arrive as the
+// '\r'/'\b'/'\t' sentinels.
 std::vector<puz::KeyPress> keysJustPressedEx();
 
 // --- display ---
