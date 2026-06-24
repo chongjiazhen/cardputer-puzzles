@@ -106,8 +106,8 @@ The game list and menus are a scrolling picker: `;`/`.` move, `Enter` selects,
 ## Roadmap
 
 v1.0 ships the 39 games above with an on-device picker, a `Tab` command menu,
-preset/custom sizing, a battery indicator, idle backlight dimming, and a
-non-bricking error path. Planned next:
+preset/custom sizing, a battery indicator, idle backlight dimming that deepens
+into light-sleep, and a non-bricking error path. Planned next:
 
 - **8bpp render canvas** — frees ~32 KB SRAM; brings **Galaxies** back (its
   generator currently OOMs the S3) and gives every game more headroom.
