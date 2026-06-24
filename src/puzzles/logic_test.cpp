@@ -6,6 +6,7 @@
 #include "input.h"
 #include "keymap.h"
 #include "picker.h"
+#include "power.h"
 
 static int fails = 0;
 #define CHECK(c) do { if(!(c)){ printf("FAIL %s:%d  %s\n",__FILE__,__LINE__,#c); fails++; } } while(0)
@@ -66,10 +67,21 @@ static void test_pickerWindow() {
     CHECK(d.count==7 && d.idx[0]==17 && d.idx[3]==20 && d.idx[6]==23);
 }
 
+static void test_idleBrightness() {
+    using namespace puz;
+    const uint32_t DIM = 30000, OFF = 90000; const uint8_t AWAKE = 200, LOW = 20;
+    CHECK(idleBrightness(0,        AWAKE, DIM, OFF, LOW) == AWAKE);   // active
+    CHECK(idleBrightness(DIM - 1,  AWAKE, DIM, OFF, LOW) == AWAKE);   // just before dim
+    CHECK(idleBrightness(DIM,      AWAKE, DIM, OFF, LOW) == LOW);     // dim boundary
+    CHECK(idleBrightness(OFF - 1,  AWAKE, DIM, OFF, LOW) == LOW);     // just before off
+    CHECK(idleBrightness(OFF,      AWAKE, DIM, OFF, LOW) == 0);       // off boundary
+}
+
 int main() {
     test_buildKeyPresses();
     test_eventForKey();
     test_pickerWindow();
+    test_idleBrightness();
     printf(fails ? "\n%d FAIL\n" : "\nlogic_test ok\n", fails);
     return fails ? 1 : 0;
 }
