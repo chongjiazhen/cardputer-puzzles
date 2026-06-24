@@ -40,4 +40,8 @@ uint8_t volume();
 struct Imu { float ax, ay, az, gx, gy, gz; };
 bool imuRead(Imu& out);           // false if no IMU / not ready
 
+// --- battery ---
+struct Battery { int level; bool charging; };  // level 0..100, -1 if unknown
+Battery battery();
+
 }  // namespace cardputer

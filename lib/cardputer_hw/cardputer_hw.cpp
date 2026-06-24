@@ -41,4 +41,10 @@ bool imuRead(Imu& out) {
   return true;
 }
 
+Battery battery() {
+  // getBatteryLevel: 0..100, or -1 when the gauge can't report. isCharging
+  // returns the is_charging_t enum; is_charging == 1.
+  return { (int)M5.Power.getBatteryLevel(), M5.Power.isCharging() == 1 };
+}
+
 }  // namespace cardputer
