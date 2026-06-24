@@ -115,6 +115,18 @@ preset/custom sizing, and a non-bricking error path. Planned next:
 - **Persistence** (NVS) — remember per-game size, resume a game in progress.
 - **Gyro recenter** — set the current tilt as neutral, so the pointer works in
   any posture.
+- **Battery indicator** — show charge level / charging state (via `M5.Power`) in
+  the status bar or the game-list corner.
+- **Sleep / power-save** — dim, then light-sleep after idle; wake on keypress.
+  Cuts drain when the device is left on.
+
+## Known limitations
+
+A few games have rendering rough edges, tracked as issues:
+
+- **Concave shapes render wrong** — Signpost / Net arrows ([#1](../../issues/1)).
+- **Drag leaves smear trails** — Untangle / Sixteen / Twiddle / Netslide ([#2](../../issues/2)).
+- **Small default-preset digits** — Mines / Filling / Pattern / Flood ([#3](../../issues/3)).
 
 ## Attribution
 
