@@ -6,24 +6,22 @@
 #define BLITTER_FROMSAVED (-1)
 #endif
 
-// ---- colour conversion ----
-
-static inline uint16_t rgb565(float r, float g, float b) {
-  int R = (int)(r * 31.0f + 0.5f), G = (int)(g * 63.0f + 0.5f), B = (int)(b * 31.0f + 0.5f);
-  if (R > 31) R = 31; if (G > 63) G = 63; if (B > 31) B = 31;
-  if (R < 0) R = 0; if (G < 0) G = 0; if (B < 0) B = 0;
-  return (uint16_t)((R << 11) | (G << 5) | B);
-}
-
+// ---- colour palette ----
+// The canvas is an 8bpp palette sprite: every draw primitive passes the puzzle's
+// colour INDEX (0..ncolours-1) and the palette maps it to RGB. Indices 254/255 are
+// reserved for the frontend's own UI (white/black, set once at canvas creation),
+// so a game may use at most 254 colours (all puzzles use far fewer).
 extern "C" void frontend_load_colours(frontend *fe, midend *me) {
   int n = 0;
   float *fl = midend_colours(me, &n);
-  free(fe->colours);
-  fe->colours = (uint16_t *)malloc(sizeof(uint16_t) * n);
-  if (!fe->colours) fatal("frontend_load_colours: out of memory");
+  if (n > 254) n = 254;   // clamp: never overwrite the reserved UI entries
   fe->ncolours = n;
-  for (int i = 0; i < n; i++)
-    fe->colours[i] = rgb565(fl[i*3+0], fl[i*3+1], fl[i*3+2]);
+  for (int i = 0; i < n; i++) {
+    int R = (int)(fl[i*3+0]*255.0f + 0.5f), G = (int)(fl[i*3+1]*255.0f + 0.5f),
+        B = (int)(fl[i*3+2]*255.0f + 0.5f);
+    if (R > 255) R = 255; if (G > 255) G = 255; if (B > 255) B = 255;
+    fe->canvas->setPaletteColor(i, R, G, B);
+  }
   free(fl);
 }
 
@@ -38,19 +36,19 @@ static inline frontend *FE(drawing *dr) { return GET_HANDLE_AS_TYPE(dr, frontend
 
 static void d_rect(drawing *dr, int x, int y, int w, int h, int c) {
   frontend *fe = FE(dr);
-  fe->canvas->fillRect(x + fe->offX, y + fe->offY, w, h, fe->colours[c]);
+  fe->canvas->fillRect(x + fe->offX, y + fe->offY, w, h, c);   // c = palette index
 }
 
 static void d_line(drawing *dr, int x1, int y1, int x2, int y2, int c) {
   frontend *fe = FE(dr);
-  fe->canvas->drawLine(x1 + fe->offX, y1 + fe->offY, x2 + fe->offX, y2 + fe->offY, fe->colours[c]);
+  fe->canvas->drawLine(x1 + fe->offX, y1 + fe->offY, x2 + fe->offX, y2 + fe->offY, c);
 }
 
 static void d_circle(drawing *dr, int cx, int cy, int r, int fill, int outline) {
   frontend *fe = FE(dr); M5Canvas *cv = fe->canvas;
   cx += fe->offX; cy += fe->offY;
-  if (fill >= 0) cv->fillCircle(cx, cy, r, fe->colours[fill]);
-  cv->drawCircle(cx, cy, r, fe->colours[outline]);
+  if (fill >= 0) cv->fillCircle(cx, cy, r, fill);
+  cv->drawCircle(cx, cy, r, outline);
 }
 
 static void d_poly(drawing *dr, const int *coords, int np, int fill, int outline) {
@@ -60,19 +58,19 @@ static void d_poly(drawing *dr, const int *coords, int np, int fill, int outline
     for (int i = 1; i + 1 < np; i++)
       cv->fillTriangle(coords[0]+ox, coords[1]+oy,
                        coords[2*i]+ox, coords[2*i+1]+oy,
-                       coords[2*i+2]+ox, coords[2*i+3]+oy, fe->colours[fill]);
+                       coords[2*i+2]+ox, coords[2*i+3]+oy, fill);
   }
   for (int i = 0; i < np; i++) {  // outline, closed
     int j = (i + 1) % np;
     cv->drawLine(coords[2*i]+ox, coords[2*i+1]+oy, coords[2*j]+ox, coords[2*j+1]+oy,
-                 fe->colours[outline]);
+                 outline);
   }
 }
 
 static void d_thick(drawing *dr, float th, float x1, float y1, float x2, float y2, int c) {
   (void)th; frontend *fe = FE(dr);
   fe->canvas->drawLine((int)x1 + fe->offX, (int)y1 + fe->offY,
-                       (int)x2 + fe->offX, (int)y2 + fe->offY, fe->colours[c]);
+                       (int)x2 + fe->offX, (int)y2 + fe->offY, c);
 }
 
 // ---- text ----
@@ -86,7 +84,7 @@ static void d_text(drawing *dr, int x, int y, int fonttype, int fontsize,
   M5Canvas *cv = FE(dr)->canvas;
   int sz = (fontsize + 4) / 8; if (sz < 1) sz = 1;   // round-to-nearest font scale
   cv->setTextSize(sz);
-  cv->setTextColor(FE(dr)->colours[colour]);
+  cv->setTextColor(colour);   // palette index
   textdatum_t datum;
   bool vc = (align & ALIGN_VCENTRE) != 0;
   if (align & ALIGN_HCENTRE)      datum = vc ? middle_center  : baseline_center;
@@ -119,9 +117,9 @@ static void d_end(drawing *dr) {
   // linger when the game's status string goes empty.
   if (fe->statusbar) {
     M5Canvas *cv = fe->canvas;
-    cv->fillRect(0, 124, 240, 11, TFT_BLACK);   // reserved strip
+    cv->fillRect(0, 124, 240, 11, UI_BLACK);   // reserved strip
     if (fe->status[0]) {
-      cv->setTextSize(1); cv->setTextColor(TFT_WHITE, TFT_BLACK);
+      cv->setTextSize(1); cv->setTextColor(UI_WHITE, UI_BLACK);
       cv->setTextDatum(bottom_left);
       cv->drawString(fe->status, 2, 134);
     }
@@ -136,14 +134,14 @@ static void d_status(drawing *dr, const char *t) {
 
 // ---- blitter ----
 
-struct blitter { int w, h, x, y; uint16_t *buf; };
+struct blitter { int w, h, x, y; uint8_t *buf; };   // 8bpp palette indices
 
 static blitter *bl_new(drawing *dr, int w, int h) {
   (void)dr;
   blitter *bl = (blitter *)malloc(sizeof(blitter));
   if (!bl) fatal("bl_new: out of memory");
   bl->w = w; bl->h = h; bl->x = bl->y = -1;
-  bl->buf = (uint16_t *)malloc(sizeof(uint16_t) * w * h);
+  bl->buf = (uint8_t *)malloc(sizeof(uint8_t) * w * h);
   if (!bl->buf) fatal("bl_new: out of memory");
   return bl;
 }

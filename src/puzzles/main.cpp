@@ -40,7 +40,7 @@ static void sizeAndCenter() {
 static void reloadResumePlaying() {
   frontend_load_colours(&g_fe, g_me);
   sizeAndCenter();
-  g_fe.canvas->fillSprite(TFT_BLACK);
+  g_fe.canvas->fillSprite(UI_BLACK);
   resumePlaying();
 }
 static void toType()   { g_state = State::TYPE_MENU; }
@@ -56,7 +56,7 @@ static void startGame(int idx) {
   midend_new_game(g_me);
   frontend_load_colours(&g_fe, g_me);
   sizeAndCenter();
-  g_fe.canvas->fillSprite(TFT_BLACK);   // clear stale pixels from the previous game
+  g_fe.canvas->fillSprite(UI_BLACK);   // clear stale pixels from the previous game
   midend_force_redraw(g_me);
   puz::uiBind({ g_me, &reloadResumePlaying, &resumePlaying, &toType, &toConfig, &togglePointer });
   // One-shot discoverability splash: shown on the first game entry per boot, then never again.
@@ -84,9 +84,13 @@ void setup() {
   cardputer::begin();
 
   g_fe.canvas = new M5Canvas(&M5.Display);
-  if (!g_fe.canvas->createSprite(240, 135))
+  g_fe.canvas->setColorDepth(lgfx::color_depth_t::palette_8bit);   // 8bpp palette: 32KB vs 64KB at 16bpp
+                                                                   // (plain 8 = rgb332, no palette -> wrong colours)
+  if (!g_fe.canvas->createSprite(240, 135))   // auto-allocates the 256-entry palette
     fatal("canvas createSprite failed - not enough SRAM");
-  g_fe.colours = nullptr; g_fe.ncolours = 0; g_fe.timer_active = false;
+  g_fe.canvas->setPaletteColor(UI_WHITE, 255, 255, 255);   // reserved UI chrome
+  g_fe.canvas->setPaletteColor(UI_BLACK, 0, 0, 0);
+  g_fe.ncolours = 0; g_fe.timer_active = false;
   g_fe.statusbar = false;
   g_fe.status[0] = '\0';
 

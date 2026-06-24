@@ -106,18 +106,15 @@ The game list and menus are a scrolling picker: `;`/`.` move, `Enter` selects,
 ## Roadmap
 
 v1.0 ships the 39 games above with an on-device picker, a `Tab` command menu,
-preset/custom sizing, a battery indicator, idle backlight dimming that deepens
-into light-sleep, and a non-bricking error path. Planned next:
+preset/custom sizing, an 8bpp palette render canvas, a battery indicator, idle
+backlight dimming that deepens into light-sleep, and a non-bricking error path.
+Planned next:
 
-- **8bpp render canvas** — frees ~32 KB SRAM; brings **Galaxies** back (its
-  generator currently OOMs the S3) and gives every game more headroom.
 - **Favorites / star** a game, pinned to the top of the list.
 - **Settings** — brightness, volume, default pointer (via `Tab` on the game list).
 - **Persistence** (NVS) — remember per-game size, resume a game in progress.
 - **Gyro recenter** — set the current tilt as neutral, so the pointer works in
   any posture.
-- **Light-sleep** — after the idle backlight-off stage, enter ESP32 light-sleep
-  and wake on keypress (keyboard INT, GPIO11) to cut standby drain further.
 
 ## Known limitations
 
@@ -126,6 +123,8 @@ A few games have rendering rough edges, tracked as issues:
 - **Concave shapes render wrong** — Signpost / Net arrows ([#1](../../issues/1)).
 - **Drag leaves smear trails** — Untangle / Sixteen / Twiddle / Netslide ([#2](../../issues/2)).
 - **Small default-preset digits** — Mines / Filling / Pattern / Flood ([#3](../../issues/3)).
+- **Galaxies unsupported** — its generator OOMs the PSRAM-less ESP32-S3 even at 5×5
+  (and after the 8bpp canvas freed ~32 KB), so it's excluded from the 39-game list.
 
 ## Attribution
 

@@ -14,8 +14,8 @@ extern const game undead, unruly, untangle;
  * upstream website. Display names differ from symbol names: rect="Rectangles",
  * samegame="Same Game", tracks="Train Tracks", lightup="Light Up". */
 const game *gamelist[] = {
-  /* galaxies excluded for v1: its generator exhausts S3 SRAM even at 5x5
-   * (OOM). Revisit once the canvas drops to 8bpp palette (Spec 2). */
+  /* galaxies still excluded: its generator OOMs the S3 even at 5x5 AND after the
+   * 8bpp canvas freed ~32KB. PSRAM-less StampS3 can't fit it; dropped for good. */
   &blackbox, &bridges, &cube, &dominosa, &fifteen, &filling, &flip, &flood,
   &guess, &inertia, &keen, &lightup, &loopy, &magnets, &map,
   &mines, &mosaic, &net, &netslide, &palisade, &pattern, &pearl, &pegs,
