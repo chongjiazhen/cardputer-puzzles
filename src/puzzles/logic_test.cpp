@@ -42,6 +42,8 @@ static void test_eventForKey() {
     CHECK(eventForKey({'y',true}).kind == Ev::Redo);
     CHECK(eventForKey({'n',true}).kind == Ev::NewGame);
     CHECK(eventForKey({'r',true}).kind == Ev::Restart);
+    CHECK(eventForKey({'p',true}).kind == Ev::TogglePointer);   // Ctrl+P toggles the tilt pointer
+    CHECK(eventForKey({'p',false}).kind == Ev::Char);           // plain 'p' still belongs to the game
     // plain letters/digits go to the game as Char (nothing stolen)
     InputEvent g = eventForKey({'l',false});
     CHECK(g.kind == Ev::Char && g.ch == 'l');

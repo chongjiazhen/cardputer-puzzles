@@ -20,6 +20,7 @@ inline InputEvent eventForKey(KeyPress k) {
       case 'y': case 'Y': return {Ev::Redo, 0};
       case 'n': case 'N': return {Ev::NewGame, 0};
       case 'r': case 'R': return {Ev::Restart, 0};
+      case 'p': case 'P': return {Ev::TogglePointer, 0};  // plain 'p' belongs to the game
       default:            return {Ev::None, 0};   // unknown Ctrl combo: ignore
     }
   }

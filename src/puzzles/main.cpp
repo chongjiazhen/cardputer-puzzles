@@ -128,6 +128,7 @@ static void handlePlaying(puz::InputEvent ev) {
       } else midend_process_key(g_me, 0, 0, CURSOR_SELECT2);
       return;
     case Ev::Restart: midend_restart_game(g_me); return;
+    case Ev::TogglePointer: g_ptr_on = !g_ptr_on; return;   // Ctrl+P (plain 'p' belongs to the game)
     case Ev::NewGame:
       midend_new_game(g_me); frontend_load_colours(&g_fe, g_me);
       sizeAndCenter();
@@ -180,8 +181,7 @@ void loop() {
     puz::pointerStep(g_ptr, -imu.ax, imu.ay, dt, 240, 135);  // ADV accel X inverted vs screen
 
   for (auto k : cardputer::keysJustPressedEx()) {
-    if (k.ch == 'p' && k.ctrl) { g_ptr_on = !g_ptr_on; continue; }  // Ctrl+P pointer toggle (plain 'p' belongs to the game)
-    handlePlaying(puz::eventForKey(k));
+    handlePlaying(puz::eventForKey(k));   // Ctrl+P → Ev::TogglePointer, handled in handlePlaying
     if (g_state != State::PLAYING) return;   // a handler changed state
   }
 
