@@ -106,7 +106,8 @@ The game list and menus are a scrolling picker: `;`/`.` move, `Enter` selects,
 ## Roadmap
 
 v1.0 ships the 39 games above with an on-device picker, a `Tab` command menu,
-preset/custom sizing, and a non-bricking error path. Planned next:
+preset/custom sizing, a battery indicator, idle backlight dimming, and a
+non-bricking error path. Planned next:
 
 - **8bpp render canvas** — frees ~32 KB SRAM; brings **Galaxies** back (its
   generator currently OOMs the S3) and gives every game more headroom.
@@ -115,10 +116,8 @@ preset/custom sizing, and a non-bricking error path. Planned next:
 - **Persistence** (NVS) — remember per-game size, resume a game in progress.
 - **Gyro recenter** — set the current tilt as neutral, so the pointer works in
   any posture.
-- **Battery indicator** — show charge level / charging state (via `M5.Power`) in
-  the status bar or the game-list corner.
-- **Sleep / power-save** — dim, then light-sleep after idle; wake on keypress.
-  Cuts drain when the device is left on.
+- **Light-sleep** — after the idle backlight-off stage, enter ESP32 light-sleep
+  and wake on keypress (keyboard INT, GPIO11) to cut standby drain further.
 
 ## Known limitations
 
