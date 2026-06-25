@@ -14,6 +14,7 @@ static uint32_t g_last_ms;
 
 static puz::Pointer g_ptr{120, 67};
 static bool g_ptr_on = false;   // default cursor mode; Ctrl+P toggles the tilt pointer
+static const char *g_curGameName = "-";   // current game name, for the crash-report context
 
 enum class State { MENU, PLAYING, COMMAND, TYPE_MENU, CONFIG_EDIT, HELP };
 static State g_state = State::MENU;
@@ -40,6 +41,8 @@ static void sizeAndCenter() {
 static void reloadResumePlaying() {
   frontend_load_colours(&g_fe, g_me);
   sizeAndCenter();
+  { char *id = midend_get_game_id(g_me);   // params changed (preset/custom) -> refresh crash ctx
+    frontend_set_crash(g_curGameName, id); sfree(id); }
   g_fe.canvas->fillSprite(UI_BLACK);
   resumePlaying();
 }
@@ -51,9 +54,13 @@ static void startGame(int idx) {
   if (g_me) { midend_free(g_me); g_me = nullptr; }
   g_me = midend_new(&g_fe, gamelist[idx], &cardputer_drawing_api, &g_fe);
   if (!g_me) return;
-  if (const char *p = presetFor(gamelist[idx]->name))
-    midend_game_id(g_me, p);  // returns nullptr on success; on error params stay default
+  g_curGameName = gamelist[idx]->name;
+  const char *p = presetFor(g_curGameName);
+  if (p) midend_game_id(g_me, p);  // returns nullptr on success; on error params stay default
+  frontend_set_crash(g_curGameName, p);   // crash ctx before generation (name + preset/default)
   midend_new_game(g_me);
+  { char *id = midend_get_game_id(g_me);   // refine with the resolved game-id (desc exists now)
+    frontend_set_crash(g_curGameName, id); sfree(id); }
   frontend_load_colours(&g_fe, g_me);
   sizeAndCenter();
   g_fe.canvas->fillSprite(UI_BLACK);   // clear stale pixels from the previous game
@@ -109,7 +116,8 @@ static void drawHelp() {
                      "Tab         menu (in game)", "Ctrl+P      tilt pointer"};
   for (int i = 0; i < 6; i++) d.drawString(L[i], 6, 20 + i * 16);
   d.setTextColor(d.color565(0x67, 0x88, 0x99), TFT_BLACK);
-  d.setTextDatum(bottom_left); d.drawString("` back", 4, 133);
+  d.setTextDatum(bottom_left);  d.drawString("` back", 4, 133);
+  d.setTextDatum(bottom_right); d.drawString(FW_VERSION, 236, 133);
 }
 
 static void handlePlaying(puz::InputEvent ev) {

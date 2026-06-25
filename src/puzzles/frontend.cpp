@@ -208,20 +208,34 @@ extern "C" const drawing_api cardputer_drawing_api = {
 
 // ---- required frontend functions (C linkage; called by core .c) ----
 
+// Crash-report context: which game + game-id was active when fatal() fires.
+// Set by startGame before/after generation so the crash screen is a complete
+// bug report even when the midend dies mid-generation.
+static char g_crashGame[24] = "-";
+static char g_crashId[48]   = "-";
+extern "C" void frontend_set_crash(const char *game, const char *params) {
+  strncpy(g_crashGame, game ? game : "-", sizeof g_crashGame - 1);
+  g_crashGame[sizeof g_crashGame - 1] = '\0';
+  strncpy(g_crashId, params ? params : "default", sizeof g_crashId - 1);
+  g_crashId[sizeof g_crashId - 1] = '\0';
+}
+
 extern "C" void fatal(const char *fmt, ...) {
   Serial.print("FATAL: ");
   va_list ap; va_start(ap, fmt);
   char buf[160]; vsnprintf(buf, sizeof buf, fmt, ap); va_end(ap);
-  Serial.println(buf);
-  // Don't brick: show the error and reboot back to the chooser. (A game that
-  // exhausts SRAM mid-generation leaves the midend unrecoverable, so restart.)
-  M5.Display.fillScreen(TFT_BLACK);
-  M5.Display.setTextSize(1);
-  M5.Display.setTextColor(TFT_RED, TFT_BLACK);
-  M5.Display.setTextDatum(middle_center);
-  M5.Display.drawString(buf, 120, 58);
-  M5.Display.drawString("restarting...", 120, 76);
-  delay(2500);
+  Serial.printf("%s  [%s %s %s]\n", buf, FW_VERSION, g_crashGame, g_crashId);
+  // Don't brick: show the error (with the game + game-id + version so a tester's
+  // screenshot is a full bug report) and reboot back to the chooser.
+  auto &d = M5.Display;
+  d.fillScreen(TFT_BLACK); d.setTextSize(1); d.setTextDatum(middle_center);
+  d.setTextColor(TFT_RED, TFT_BLACK);      d.drawString(buf, 120, 46);
+  d.setTextColor(TFT_CYAN, TFT_BLACK);     d.drawString(g_crashGame, 120, 64);
+  d.drawString(g_crashId, 120, 78);
+  d.setTextColor(d.color565(0x67,0x88,0x99), TFT_BLACK);
+  d.drawString(FW_VERSION "  -  report at the repo issues", 120, 96);
+  d.setTextColor(TFT_RED, TFT_BLACK);      d.drawString("restarting...", 120, 116);
+  delay(4000);
   ESP.restart();
 }
 extern "C" void frontend_default_colour(frontend *fe, float *output) {
