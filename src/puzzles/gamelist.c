@@ -14,10 +14,12 @@ extern const game undead, unruly, untangle;
  * upstream website. Display names differ from symbol names: rect="Rectangles",
  * samegame="Same Game", tracks="Train Tracks", lightup="Light Up". */
 const game *gamelist[] = {
-  /* galaxies still excluded: its generator OOMs the S3 even at 5x5 AND after the
-   * 8bpp canvas freed ~32KB. PSRAM-less StampS3 can't fit it; dropped for good. */
+  /* galaxies is back: it was never a real OOM — its generator makes a zero-size
+   * allocation, and newlib malloc(0) returns NULL (glibc doesn't), which Tatham's
+   * smalloc misreads as out-of-memory. Fixed by the malloc(0)->1 shim
+   * (src/puzzles/malloc0_shim.c + -Wl,--wrap=malloc). */
   &blackbox, &bridges, &cube, &dominosa, &fifteen, &filling, &flip, &flood,
-  &guess, &inertia, &keen, &lightup, &loopy, &magnets, &map,
+  &galaxies, &guess, &inertia, &keen, &lightup, &loopy, &magnets, &map,
   &mines, &mosaic, &net, &netslide, &palisade, &pattern, &pearl, &pegs,
   &range, &rect, &samegame, &signpost, &singles, &sixteen, &slant, &solo,
   &tents, &towers, &tracks, &twiddle, &undead, &unequal, &unruly, &untangle,

@@ -4,20 +4,18 @@ Simon Tatham's Portable Puzzle Collection ported to the **M5Stack Cardputer ADV*
 
 Upstream project: https://www.chiark.greenend.org.uk/~sgtatham/puzzles/
 
-## Included games (39)
+## Included games (40)
 
 Simon Tatham's collection, alphabetical:
 
 Black Box · Bridges · Cube · Dominosa · Fifteen · Filling · Flip · Flood ·
-Guess · Inertia · Keen · Light Up · Loopy · Magnets · Map · Mines · Mosaic ·
+Galaxies · Guess · Inertia · Keen · Light Up · Loopy · Magnets · Map · Mines · Mosaic ·
 Net · Netslide · Palisade · Pattern · Pearl · Pegs · Range · Rectangles ·
 Same Game · Signpost · Singles · Sixteen · Slant · Solo · Tents · Towers ·
 Train Tracks · Twiddle · Undead · Unequal · Unruly · Untangle
 
-> **Galaxies** is temporarily excluded: its generator exhausts the S3's SRAM
-> even at small sizes. It returns once the render canvas drops to an 8bpp
-> palette (frees ~32 KB). Any game that does run out of memory shows an error
-> and reboots to the menu rather than hanging.
+> Any game that runs out of memory shows an error and reboots to the menu
+> rather than hanging.
 
 ## Hardware
 
@@ -105,7 +103,7 @@ The game list and menus are a scrolling picker: `;`/`.` move, `Enter` selects,
 
 ## Roadmap
 
-v1.0 ships the 39 games above with an on-device picker, a `Tab` command menu,
+v1.0 ships the 40 games above with an on-device picker, a `Tab` command menu,
 preset/custom sizing, an 8bpp palette render canvas, a battery indicator, idle
 backlight dimming that deepens into light-sleep, and a non-bricking error path.
 Planned next:
@@ -123,8 +121,6 @@ A few games have rendering rough edges, tracked as issues:
 - **Concave shapes render wrong** — Signpost / Net arrows ([#1](../../issues/1)).
 - **Drag leaves smear trails** — Untangle / Sixteen / Twiddle / Netslide ([#2](../../issues/2)).
 - **Small default-preset digits** — Mines / Filling / Pattern / Flood ([#3](../../issues/3)).
-- **Galaxies unsupported** — its generator OOMs the PSRAM-less ESP32-S3 even at 5×5
-  (and after the 8bpp canvas freed ~32 KB), so it's excluded from the 39-game list.
 
 ## Attribution
 

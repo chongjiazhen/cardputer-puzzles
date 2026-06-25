@@ -35,10 +35,8 @@ coordinate input (e.g. Mines, Light Up).
 
 ## Included games
 
-39 of Tatham's puzzles ship in v1.0 — browse them in the on-device picker, or see
-the full list in the [README](../README.md#included-games-39). (Galaxies is
-temporarily excluded while its generator is too memory-hungry for the S3; see the
-roadmap.)
+40 of Tatham's puzzles ship in v1.0 — browse them in the on-device picker, or see
+the full list in the [README](../README.md#included-games-40).
 
 ---
 
