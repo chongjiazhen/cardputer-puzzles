@@ -22,7 +22,7 @@ static const uint8_t UI_WHITE = 254, UI_BLACK = 255;
 
 // Firmware version, shown on the crash screen and the Help footer so a tester's
 // screenshot of a crash is a self-contained bug report. Bump per release.
-#define FW_VERSION "v1.0"
+#define FW_VERSION "v1.0-beta"
 
 extern "C" const drawing_api cardputer_drawing_api;
 extern "C" void frontend_load_colours(frontend *fe, midend *me);
