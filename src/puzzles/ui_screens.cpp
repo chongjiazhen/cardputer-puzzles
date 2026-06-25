@@ -157,9 +157,14 @@ void configKey(InputEvent ev) {
       }
       break;
     case Ev::Select: {   // apply all
-      const char* err = configApply(g_ui.me, g_cfg);
+      const char* err = configApply(g_ui.me, g_cfg);   // sets params only — must regenerate
       if (err) { g_cfgErr = err; drawConfig(); }
-      else { configFree(g_cfg); g_cfg = nullptr; free(g_cfgTitle); g_cfgTitle = nullptr; g_ui.reloadResume(); }
+      else {
+        midend_new_game(g_ui.me);   // generate a board at the new params (else stale grid
+                                    // draws into a differently-sized background)
+        configFree(g_cfg); g_cfg = nullptr; free(g_cfgTitle); g_cfgTitle = nullptr;
+        g_ui.reloadResume();
+      }
       break;
     }
     case Ev::BackToChooser:   // cancel
