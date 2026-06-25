@@ -15,6 +15,7 @@ static uint32_t g_last_ms;
 static puz::Pointer g_ptr{120, 67};
 static bool g_ptr_on = false;   // default cursor mode; Ctrl+P toggles the tilt pointer
 static const char *g_curGameName = "-";   // current game name, for the crash-report context
+static int g_curIdx = -1;                 // currently-loaded game; re-entering it resumes in-progress
 
 enum class State { MENU, PLAYING, COMMAND, TYPE_MENU, CONFIG_EDIT, HELP };
 static State g_state = State::MENU;
@@ -54,6 +55,7 @@ static void startGame(int idx) {
   if (g_me) { midend_free(g_me); g_me = nullptr; }
   g_me = midend_new(&g_fe, gamelist[idx], &cardputer_drawing_api, &g_fe);
   if (!g_me) return;
+  g_curIdx = idx;
   g_curGameName = gamelist[idx]->name;
   const char *p = presetFor(g_curGameName);
   if (p) midend_game_id(g_me, p);  // returns nullptr on success; on error params stay default
@@ -84,6 +86,14 @@ static void startGame(int idx) {
 static void openMenu() {
   g_state = State::MENU;
   puz::drawChooser(g_sel);
+}
+
+// Selecting a game from the chooser: if it's the game already loaded, resume it
+// in progress (so an accidental ` back to the menu doesn't lose a puzzle) instead
+// of regenerating. Switching to a different title starts that one fresh.
+static void enterGame(int idx) {
+  if (g_me && idx == g_curIdx) { resumePlaying(); return; }
+  startGame(idx);
 }
 
 void setup() {
@@ -161,7 +171,7 @@ void loop() {
       puz::InputEvent ev = puz::eventForKey(k);
       if (ev.kind == puz::Ev::Up)   { g_sel = (g_sel + gamecount - 1) % gamecount; puz::drawChooser(g_sel); }
       if (ev.kind == puz::Ev::Down) { g_sel = (g_sel + 1) % gamecount;             puz::drawChooser(g_sel); }
-      if (ev.kind == puz::Ev::Select)      startGame(g_sel);
+      if (ev.kind == puz::Ev::Select)      enterGame(g_sel);
       if (ev.kind == puz::Ev::CommandMenu) { g_state = State::HELP; drawHelp(); }
     }
     delay(16); return;
