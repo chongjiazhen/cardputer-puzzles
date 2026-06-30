@@ -5,6 +5,7 @@
 #include <climits>
 #include "params_ui.h"
 #include "picker.h"
+#include "rules_map.h"
 
 namespace puz {
 
@@ -16,7 +17,7 @@ static char* g_rulesText = nullptr;   // owned by caller (midend_get_config retu
 static int   g_rulesLine = 0;         // top line visible at scroll origin
 static char kLines[18][64];           // mutable buffers, one per wrapped line
 static int   g_linesN = 0;            // total wrapped lines
-static const int RULES_CHARS_PER_LINE = 36;  // size-1 font ~6px wide => ~36 chars in 224px usable width
+static const int RULES_CHARS_PER_LINE = 18;  // size-2 font ~12px wide => ~18 chars in 224px usable width
 
 static void freeRules() { memset(kLines, 0, sizeof kLines); g_linesN = 0; g_rulesLine = 0; if (g_rulesText) sfree(g_rulesText), g_rulesText = nullptr; }
 
@@ -70,6 +71,14 @@ static void wrapRules(const char* src) {
   g_linesN = n;
 }
 
+static const char* lookup_rule(const char* topic) {
+    for (int i = 0; rules_map[i].topic != NULL; ++i) {
+        if (strcmp(rules_map[i].topic, topic) == 0)
+            return rules_map[i].text;
+    }
+    return NULL;
+}
+
 static void drawRules() {
   auto &d = M5.Display;
   d.fillScreen(TFT_BLACK);
@@ -77,31 +86,23 @@ static void drawRules() {
   d.setTextDatum(top_left); d.drawString("Rules", 4, 2);
   d.drawFastHLine(0, 12, 240, d.color565(0x24, 0x40, 0x55));
   d.setTextColor(TFT_WHITE, TFT_BLACK);
+  d.setTextSize(2);
 
   int y = 20;
-  for (int i = g_rulesLine; i < g_linesN && y <= 130; i++, y += 9)
+  for (int i = g_rulesLine; i < g_linesN && y <= 130; i++, y += 18)
     d.drawString(kLines[i], 8, y);
 
+  d.setTextSize(1);
   d.setTextColor(d.color565(0x67, 0x88, 0x99), TFT_BLACK);
   d.setTextDatum(bottom_left); d.drawString("` back", 4, 133);
 }
 
-void openRules() {
-  char *title = nullptr;
-  config_item* cfg = midend_get_config(g_ui.me, CFG_DESC, &title);
-  const char* desc = nullptr;
-  if (cfg && cfg->type != C_END) {
-    const char* raw = cfg[0].u.string.sval;
-    // CFG_DESC returns "game_id:description" — skip past the colon separator
-    const char* colon = strchr(raw, ':');
-    desc = colon ? colon + 1 : raw;
-  }
-  sfree(title);
-  wrapRules(desc ? desc : "(rules not available)");
-  // cfg from CFG_DESC is a snewn'd 2-entry array — expected to be free_cfg'd by
-  // caller per midend convention, but the only field we read (sval) is an inline
-  // pointer into the midend's encode_params buffer, so we leak the config_item
-  // shell but the strings stay live elsewhere. Acceptable for a transient read.
+void openRules() {      
+  const char *topic = midend_which_game(g_ui.me)->htmlhelp_topic;
+  const char *rule = lookup_rule(topic);
+  const char *fallback = "No detailed rules available on this device.\nSee the online documentation for game-specific instructions.";
+  const char *finalDesc = rule ? rule : fallback;
+  wrapRules(finalDesc);
   g_ui.toRules();
   drawRules();
 }

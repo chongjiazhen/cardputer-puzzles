@@ -22,3 +22,6 @@ CLAUDE.local.md
 
 # agent execution runbooks — kept local, not public (stale once work lands; specs/ is the design record)
 docs/design/plans/
+
+# qwen agent harness scaffolding (local only)
+.qwen/
