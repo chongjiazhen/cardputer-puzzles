@@ -2,6 +2,7 @@
 #undef PI   // puzzles.h (via params_ui.h) redefines PI with more precision
 #include <cstdio>
 #include <cstring>
+#include <climits>
 #include "params_ui.h"
 #include "picker.h"
 
@@ -10,10 +11,115 @@ namespace puz {
 static UiCtx g_ui;
 void uiBind(const UiCtx& c) { g_ui = c; }
 
+// ---------------- rules viewer ----------------
+static char* g_rulesText = nullptr;   // owned by caller (midend_get_config returns malloc'ed)
+static int   g_rulesLine = 0;         // top line visible at scroll origin
+static char kLines[18][64];           // mutable buffers, one per wrapped line
+static int   g_linesN = 0;            // total wrapped lines
+static const int RULES_CHARS_PER_LINE = 36;  // size-1 font ~6px wide => ~36 chars in 224px usable width
+
+static void freeRules() { memset(kLines, 0, sizeof kLines); g_linesN = 0; g_rulesLine = 0; if (g_rulesText) sfree(g_rulesText), g_rulesText = nullptr; }
+
+// Wrap `src` into lines that fit on a single row.
+static const int MAX_LINES = 18;
+
+static void wrapRules(const char* src) {
+  freeRules();
+  g_rulesText = strdup(src);
+  int n = 0;
+  const char *p = g_rulesText;
+  while (*p && n < MAX_LINES) {
+    // Find end of this paragraph: double newline or EOF
+    const char* paraEnd = p;
+    const char* nn = strstr(p, "\n\n");
+    if (nn) paraEnd = nn;
+    else paraEnd = p + strlen(p);
+
+    // Trim trailing whitespace from paragraph body
+    while (paraEnd > p && (*(paraEnd-1) == ' ' || *(paraEnd-1) == '\t' || *(paraEnd-1) == '\n'))
+      paraEnd--;
+    size_t plen = paraEnd - p;
+    if (plen == 0) {
+      p = (nn) ? nn + 2 : paraEnd;  // skip blank paragraph separator
+      continue;
+    }
+
+    // Word-wrap this paragraph within RULES_CHARS_PER_LINE chars.
+    const char* q = p;
+    size_t qlen = plen;
+    while (qlen > 0 && n < MAX_LINES) {
+      int limit = (qlen < (size_t)RULES_CHARS_PER_LINE) ? (int)qlen : RULES_CHARS_PER_LINE;
+      int cut = limit;
+      if (cut < (int)qlen) {
+        int space = -1;
+        for (int i = 0; i < limit; i++) if (q[i] == ' ') space = i;
+        if (space > 0) cut = space;
+      }
+      int copyLen = (cut > 63) ? 63 : cut;
+      memcpy(kLines[n], q, copyLen);
+      kLines[n][copyLen] = '\0';
+      n++;
+      q += cut;
+      qlen -= cut;
+      while (qlen > 0 && (*q == ' ' || *q == '\t')) { q++; qlen--; }
+    }
+    // Advance past consumed paragraph + separator
+    p = (nn) ? nn + 2 : paraEnd;
+    while (*p == '\n' || *p == ' ' || *p == '\t') p++;
+  }
+  g_linesN = n;
+}
+
+static void drawRules() {
+  auto &d = M5.Display;
+  d.fillScreen(TFT_BLACK);
+  d.setTextSize(1); d.setTextColor(TFT_CYAN, TFT_BLACK);
+  d.setTextDatum(top_left); d.drawString("Rules", 4, 2);
+  d.drawFastHLine(0, 12, 240, d.color565(0x24, 0x40, 0x55));
+  d.setTextColor(TFT_WHITE, TFT_BLACK);
+
+  int y = 20;
+  for (int i = g_rulesLine; i < g_linesN && y <= 130; i++, y += 9)
+    d.drawString(kLines[i], 8, y);
+
+  d.setTextColor(d.color565(0x67, 0x88, 0x99), TFT_BLACK);
+  d.setTextDatum(bottom_left); d.drawString("` back", 4, 133);
+}
+
+void openRules() {
+  char *title = nullptr;
+  config_item* cfg = midend_get_config(g_ui.me, CFG_DESC, &title);
+  const char* desc = nullptr;
+  if (cfg && cfg->type != C_END) {
+    const char* raw = cfg[0].u.string.sval;
+    // CFG_DESC returns "game_id:description" — skip past the colon separator
+    const char* colon = strchr(raw, ':');
+    desc = colon ? colon + 1 : raw;
+  }
+  sfree(title);
+  wrapRules(desc ? desc : "(rules not available)");
+  // cfg from CFG_DESC is a snewn'd 2-entry array — expected to be free_cfg'd by
+  // caller per midend convention, but the only field we read (sval) is an inline
+  // pointer into the midend's encode_params buffer, so we leak the config_item
+  // shell but the strings stay live elsewhere. Acceptable for a transient read.
+  g_ui.toRules();
+  drawRules();
+}
+
+void ruleKey(InputEvent ev) {
+  if (g_linesN == 0) { if (ev.kind == Ev::BackToChooser) { freeRules(); g_ui.resume(); } return; }
+  switch (ev.kind) {
+    case Ev::Up:   g_rulesLine = (g_rulesLine + g_linesN - 1) % g_linesN; drawRules(); break;
+    case Ev::Down: g_rulesLine = (g_rulesLine + 1) % g_linesN;          drawRules(); break;
+    case Ev::BackToChooser: freeRules(); g_ui.resume(); break;
+    default: break;
+  }
+}
+
 // ---------------- command menu ----------------
-static const char* kCmdItems[]  = {"Size / Type","New game","Restart","Solve","Undo","Redo","Pointer"};
-static const char* kCmdSuffix[] = {"",           "Ctrl+N",  "Ctrl+R", "",     "Ctrl+Z","Ctrl+Y","Ctrl+P"};
-static const int   kCmdN = 7;
+static const char* kCmdItems[]   = {"Size / Type","New game","Restart","Solve","Undo","Redo","Pointer","Rules"};
+static const char* kCmdSuffix[]  = {"",           "Ctrl+N",  "Ctrl+R", "",     "Ctrl+Z","Ctrl+Y","Ctrl+P"," Tab "};
+static const int   kCmdN = 8;
 static int g_cmdSel = 0;
 
 static void drawCommand() { drawPicker(kCmdItems, kCmdN, g_cmdSel, "Menu", "Tab", kCmdSuffix, 5); }
@@ -33,6 +139,7 @@ void commandKey(InputEvent ev) {
         case 4: midend_process_key(g_ui.me, 0, 0, UI_UNDO); g_ui.resume(); break;
         case 5: midend_process_key(g_ui.me, 0, 0, UI_REDO); g_ui.resume(); break;
         case 6: g_ui.togglePointer(); g_ui.resume(); break;
+        case 7: g_ui.resume(); openRules(); break;
       }
       break;
     default: break;

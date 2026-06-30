@@ -17,7 +17,7 @@ static bool g_ptr_on = false;   // default cursor mode; Ctrl+P toggles the tilt 
 static const char *g_curGameName = "-";   // current game name, for the crash-report context
 static int g_curIdx = -1;                 // currently-loaded game; re-entering it resumes in-progress
 
-enum class State { MENU, PLAYING, COMMAND, TYPE_MENU, CONFIG_EDIT, HELP };
+enum class State { MENU, PLAYING, COMMAND, TYPE_MENU, CONFIG_EDIT, HELP, RULES };
 static State g_state = State::MENU;
 static int g_sel = 0;
 static bool g_tab_seen = false;   // self-extinguishing splash flag (set on first Tab)
@@ -49,6 +49,7 @@ static void reloadResumePlaying() {
 }
 static void toType()   { g_state = State::TYPE_MENU; }
 static void toConfig() { g_state = State::CONFIG_EDIT; }
+static void toRules()    { g_state = State::RULES; }
 static void togglePointer() { g_ptr_on = !g_ptr_on; }
 
 static void startGame(int idx) {
@@ -67,7 +68,7 @@ static void startGame(int idx) {
   sizeAndCenter();
   g_fe.canvas->fillSprite(UI_BLACK);   // clear stale pixels from the previous game
   midend_force_redraw(g_me);
-  puz::uiBind({ g_me, &reloadResumePlaying, &resumePlaying, &toType, &toConfig, &togglePointer });
+  puz::uiBind({ g_me, &reloadResumePlaying, &resumePlaying, &toType, &toConfig, &toRules, &togglePointer });
   // One-shot discoverability splash: shown on the first game entry per boot, then never again.
   if (!g_tab_seen) {
     auto &d = M5.Display;
@@ -191,6 +192,10 @@ void loop() {
   }
   if (g_state == State::CONFIG_EDIT) {
     for (auto k : cardputer::keysJustPressedEx()) { puz::configKey(puz::eventForKey(k)); if (g_state != State::CONFIG_EDIT) break; }
+    delay(16); return;
+  }
+  if (g_state == State::RULES) {
+    for (auto k : cardputer::keysJustPressedEx()) { puz::ruleKey(puz::eventForKey(k)); if (g_state != State::RULES) break; }
     delay(16); return;
   }
 

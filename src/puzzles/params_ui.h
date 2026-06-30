@@ -31,11 +31,13 @@ struct UiCtx {
   void (*resume)();         // resume PLAYING (no regen)
   void (*toType)();         // set g_state = TYPE_MENU
   void (*toConfig)();       // set g_state = CONFIG_EDIT
+  void (*toRules)();        // set g_state = RULES
   void (*togglePointer)();  // flip the tilt pointer
 };
 void uiBind(const UiCtx& c);
 void openCommand();  void commandKey(InputEvent ev);
 void openTypeMenu(); void typeKey(InputEvent ev);
 void openConfig();   void configKey(InputEvent ev);
+void openRules();    void ruleKey(InputEvent ev);
 
 }  // namespace puz
