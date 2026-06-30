@@ -119,7 +119,7 @@ void ruleKey(InputEvent ev) {
 
 // ---------------- command menu ----------------
 static const char* kCmdItems[]   = {"Size / Type","New game","Restart","Solve","Undo","Redo","Pointer","Rules"};
-static const char* kCmdSuffix[]  = {"",           "Ctrl+N",  "Ctrl+R", "",     "Ctrl+Z","Ctrl+Y","Ctrl+P"," Tab "};
+static const char* kCmdSuffix[]  = {"",           "Ctrl+N",  "Ctrl+R", "",     "Ctrl+Z","Ctrl+Y","Ctrl+P",""};
 static const int   kCmdN = 8;
 static int g_cmdSel = 0;
 
