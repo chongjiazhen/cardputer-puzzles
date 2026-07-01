@@ -91,7 +91,7 @@ Solo's hex digits, etc. — work). Frontend commands live on Ctrl, Tab, and `` `
 | digits / letters / `⌫` | Per-game input |
 | `Ctrl`+`Z` / `Ctrl`+`Y` | Undo / Redo |
 | `Ctrl`+`N` / `Ctrl`+`R` | New game / Restart |
-| `Tab` | **Menu** (in game: size/type, new, restart, solve, undo/redo, pointer) · **Help** (on the game list) |
+| `Tab` | **Menu** (in game: size/type, new, restart, solve, undo/redo, pointer, rules) · **Help** (on the game list) |
 | `Ctrl`+`P` | Toggle the IMU tilt pointer (then Enter/Space click at the crosshair) |
 | `` ` `` | Back (to the game list / out of a menu) |
 
@@ -103,14 +103,16 @@ The game list and menus are a scrolling picker: `;`/`.` move, `Enter` selects,
 
 ## Roadmap
 
-v1.0 ships the 40 games above with an on-device picker, a `Tab` command menu,
-preset/custom sizing, an 8bpp palette render canvas, a battery indicator, idle
-backlight dimming that deepens into light-sleep, and a non-bricking error path.
-Planned next:
+v1.0 ships the 40 games above with an on-device picker, a `Tab` command menu
+with an in-menu rules viewer, preset/custom sizing, an 8bpp palette render
+canvas, a battery indicator, idle backlight dimming that deepens into
+light-sleep, in-memory resume of the game you left, and a non-bricking error
+path. Planned next:
 
 - **Favorites / star** a game, pinned to the top of the list.
 - **Settings** — brightness, volume, default pointer (via `Tab` on the game list).
-- **Persistence** (NVS) — remember per-game size, resume a game in progress.
+- **Persistence** (NVS) — save resume state across power-off (current resume
+  is in-memory only, lost on reboot), remember per-game size.
 - **Gyro recenter** — set the current tilt as neutral, so the pointer works in
   any posture.
 
