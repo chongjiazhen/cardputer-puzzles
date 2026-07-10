@@ -170,14 +170,26 @@ static void bl_free(drawing *dr, blitter *bl) {
   (void)dr;
   free(bl->buf); free(bl);
 }
+// Save/restore per-pixel via readPixelValue/drawPixel: those speak raw palette
+// indices. readRect/pushImage do NOT round-trip indices on a palette sprite
+// (they colour-convert), which corrupts the board — showed up as Map smearing
+// the region under its drag cursor on every save/restore cycle.
 static void bl_save(drawing *dr, blitter *bl, int x, int y) {
   bl->x = x; bl->y = y;
-  FE(dr)->canvas->readRect(x + FE(dr)->offX, y + FE(dr)->offY, bl->w, bl->h, bl->buf);
+  M5Canvas *cv = FE(dr)->canvas;
+  int ox = x + FE(dr)->offX, oy = y + FE(dr)->offY;
+  for (int j = 0; j < bl->h; j++)
+    for (int i = 0; i < bl->w; i++)
+      bl->buf[j * bl->w + i] = (uint8_t)cv->readPixelValue(ox + i, oy + j);
 }
 static void bl_load(drawing *dr, blitter *bl, int x, int y) {
   if (x == BLITTER_FROMSAVED) x = bl->x;
   if (y == BLITTER_FROMSAVED) y = bl->y;
-  FE(dr)->canvas->pushImage(x + FE(dr)->offX, y + FE(dr)->offY, bl->w, bl->h, bl->buf);
+  M5Canvas *cv = FE(dr)->canvas;
+  int ox = x + FE(dr)->offX, oy = y + FE(dr)->offY;
+  for (int j = 0; j < bl->h; j++)
+    for (int i = 0; i < bl->w; i++)
+      cv->drawPixel(ox + i, oy + j, bl->buf[j * bl->w + i]);
 }
 
 // ---- stubs for unused slots ----
