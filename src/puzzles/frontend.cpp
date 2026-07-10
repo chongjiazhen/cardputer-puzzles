@@ -14,7 +14,7 @@
 extern "C" void frontend_load_colours(frontend *fe, midend *me) {
   int n = 0;
   float *fl = midend_colours(me, &n);
-  if (n > 254) n = 254;   // clamp: never overwrite the reserved UI entries
+  if (n > 252) n = 252;   // clamp: never overwrite the reserved UI entries
   fe->ncolours = n;
   for (int i = 0; i < n; i++) {
     int R = (int)(fl[i*3+0]*255.0f + 0.5f), G = (int)(fl[i*3+1]*255.0f + 0.5f),
@@ -82,8 +82,18 @@ static void d_text(drawing *dr, int x, int y, int fonttype, int fontsize,
                    int align, int colour, const char *text) {
   (void)fonttype;
   M5Canvas *cv = FE(dr)->canvas;
-  int sz = (fontsize + 4) / 8; if (sz < 1) sz = 1;   // round-to-nearest font scale
-  cv->setTextSize(sz);
+  // Honour small requested sizes instead of clamping up: games compute fontsize
+  // from TILESIZE (e.g. keen's cage clues at TILESIZE/4 ≈ 5px on a 6x6 grid).
+  // Rendering those at the 6x8 Font0 minimum overflows the tile and collides
+  // with neighbours; TomThumb (3x5) actually fits.
+  if (fontsize <= 6) {
+    cv->setFont(&fonts::TomThumb);
+    cv->setTextSize(1);
+  } else {
+    cv->setFont(&fonts::Font0);
+    int sz = (fontsize + 4) / 8; if (sz < 1) sz = 1;   // round-to-nearest font scale
+    cv->setTextSize(sz);
+  }
   cv->setTextColor(colour);   // palette index
   textdatum_t datum;
   bool vc = (align & ALIGN_VCENTRE) != 0;
@@ -119,12 +129,23 @@ static void d_end(drawing *dr) {
     M5Canvas *cv = fe->canvas;
     cv->fillRect(0, 124, 240, 11, UI_BLACK);   // reserved strip
     if (fe->status[0]) {
+      cv->setFont(&fonts::Font0);   // d_text may have left TomThumb selected
       cv->setTextSize(1); cv->setTextColor(UI_WHITE, UI_BLACK);
       cv->setTextDatum(bottom_left);
       cv->drawString(fe->status, 2, 134);
     }
   }
-  fe->canvas->pushSprite(&M5.Display, 0, 0);
+  frontend_push(fe);
+}
+
+extern "C" void frontend_push(frontend *fe) {
+  M5Canvas *cv = fe->canvas;
+  if (fe->zoom) {
+    cv->setPivot(fe->zoomX, fe->zoomY);
+    cv->pushRotateZoom(&M5.Display, 120, 67, 0.0f, 2.0f, 2.0f);
+  } else {
+    cv->pushSprite(&M5.Display, 0, 0);
+  }
 }
 static void d_update(drawing *dr, int, int, int, int) { (void)dr; }
 static void d_status(drawing *dr, const char *t) {
@@ -164,7 +185,19 @@ static void bl_load(drawing *dr, blitter *bl, int x, int y) {
 static void d_linewidth(drawing*, float) {}
 static void d_linedotted(drawing*, bool) {}
 static char *d_textfallback(drawing*, const char *const *s, int n) {
-  char *r = s && n > 0 && s[0] ? strdup(s[0]) : strdup("");
+  // Games pass alternatives best-first, typically UTF-8 then ASCII (e.g. keen's
+  // "×" then "x"). Our fonts are ASCII-only — a UTF-8 pick renders as nothing,
+  // so operator signs vanish from clues. Take the first all-ASCII candidate.
+  const char *pick = nullptr;
+  for (int i = 0; s && i < n; i++) {
+    if (!s[i]) continue;
+    bool ascii = true;
+    for (const char *p = s[i]; *p; p++)
+      if ((unsigned char)*p >= 0x80) { ascii = false; break; }
+    if (ascii) { pick = s[i]; break; }
+    if (!pick) pick = s[i];   // remember best-preference as last resort
+  }
+  char *r = strdup(pick ? pick : "");
   if (!r) fatal("d_textfallback: out of memory");
   return r;
 }

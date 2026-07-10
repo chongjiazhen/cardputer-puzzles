@@ -60,7 +60,8 @@ enum class Ev {
   Undo, Redo, NewGame, Solve, Restart,
   Menu,            // legacy (` in old loop) — superseded by BackToChooser; removed in Task 7
   BackToChooser, CommandMenu,
-  ClickL, ClickR, TogglePointer
+  ClickL, ClickR, TogglePointer,
+  ZoomPeek, PanUp, PanDown, PanLeft, PanRight
 };
 
 struct InputEvent { Ev kind; char ch; };

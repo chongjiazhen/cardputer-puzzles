@@ -21,7 +21,7 @@ See the **[Controls table in the README](../README.md#controls)** — that is th
 single source of truth. In brief: every plain key goes to the puzzle; frontend
 commands live on `Ctrl`, `Tab`, and `` ` ``. The `;` `.` `,` `/` cluster moves
 the cursor; `Enter`/`Space` select; `Tab` opens the in-game menu (size/type, new,
-restart, solve, undo/redo, pointer, rules). All mappings are defined in
+restart, solve, undo/redo, pointer, zoom, rules). All mappings are defined in
 `src/puzzles/keymap.h` — the single place to remap keys.
 
 ### IMU tilt pointer

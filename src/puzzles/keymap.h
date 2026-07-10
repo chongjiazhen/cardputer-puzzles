@@ -21,6 +21,16 @@ inline InputEvent eventForKey(KeyPress k) {
       case 'n': case 'N': return {Ev::NewGame, 0};
       case 'r': case 'R': return {Ev::Restart, 0};
       case 'p': case 'P': return {Ev::TogglePointer, 0};  // plain 'p' belongs to the game
+      case 'l': case 'L': return {Ev::ZoomPeek, 0};       // toggle 2x magnifier (plain 'l' belongs to the game)
+      // Ctrl+arrow-cluster pans the zoom window. With ctrl held the M5Cardputer
+      // keyboard lib reports value_second (the SHIFTED char) in `word` -- see
+      // Keyboard.cpp updateKeysState: ctrl||shift||caps all select value_second.
+      // So Ctrl+';' arrives as ':' etc. Match both, same reason the letter
+      // hotkeys above match upper AND lower case.
+      case ';': case ':': return {Ev::PanUp, 0};
+      case '.': case '>': return {Ev::PanDown, 0};
+      case ',': case '<': return {Ev::PanLeft, 0};
+      case '/': case '?': return {Ev::PanRight, 0};
       default:            return {Ev::None, 0};   // unknown Ctrl combo: ignore
     }
   }

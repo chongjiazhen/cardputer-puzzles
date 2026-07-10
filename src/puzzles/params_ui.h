@@ -33,6 +33,7 @@ struct UiCtx {
   void (*toConfig)();       // set g_state = CONFIG_EDIT
   void (*toRules)();        // set g_state = RULES
   void (*togglePointer)();  // flip the tilt pointer
+  void (*toggleZoom)();     // flip the 2x magnifier
 };
 void uiBind(const UiCtx& c);
 void openCommand();  void commandKey(InputEvent ev);
