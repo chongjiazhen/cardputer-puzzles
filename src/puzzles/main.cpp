@@ -156,6 +156,14 @@ void setup() {
   Serial.begin(115200);
   cardputer::begin();
 
+  // Start every cursor game with its keyboard cursor already visible. Without
+  // this, upstream inits cur_visible=false (getenv_bool default) and the FIRST
+  // CURSOR_SELECT only reveals the cursor at region 0 instead of acting -- so
+  // Enter/Space feel dead / off-by-one until an arrow or a wasted press wakes
+  // it. 35 games honour this flag (incl. Map's pipette pickup). Value must lead
+  // with y/Y/t/T -- getenv_bool (upstream misc.c) tests only the first char.
+  setenv("PUZZLES_SHOW_CURSOR", "y", 1);
+
   g_fe.canvas = new M5Canvas(&M5.Display);
   g_fe.canvas->setColorDepth(lgfx::color_depth_t::palette_8bit);   // 8bpp palette: 32KB vs 64KB at 16bpp
                                                                    // (plain 8 = rgb332, no palette -> wrong colours)
