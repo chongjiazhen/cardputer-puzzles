@@ -106,7 +106,41 @@ static void ptrTrackClick(PtrSel mode) {
   else { g_ptrSel = mode; g_ptrHl = true; g_selPX = g_ptr.x; g_selPY = g_ptr.y; }
 }
 
+// --- Map tilt-pointer pipette (drag colour source -> destination) ---
+// Map colours by DRAG: press picks up a region's colour, release drops it on
+// another. An atomic crosshair click (press+release same pixel) is a no-op
+// there (drop region == source). The crosshair can't hold a button, so we
+// split a drag across two presses: press 1 = pick up (button down at source,
+// held), press 2 = drop (button up at destination). Map-only -- every other
+// game keeps the atomic click, so digit games' pencil/select semantics stay
+// intact. The held button is remembered so the drop matches the pickup (Enter
+// = fill, Space = pencil) regardless of which key ends the drag.
+static bool onMap() { return g_curGameName && strcmp(g_curGameName, "Map") == 0; }   // ->name is the display name
+static int g_mapPick = 0;                 // 0 idle, else held button (LEFT_/RIGHT_BUTTON)
+static int g_mapPickPX = 0, g_mapPickPY = 0;   // pickup coords, for a clean cancel
+static void mapDragStep(int px, int py, int down) {
+  if (!g_mapPick) {                       // press 1: pick up colour at source
+    midend_process_key(g_me, px, py, down);
+    g_mapPick = down; g_mapPickPX = px; g_mapPickPY = py;
+  } else {                                // press 2: drop at destination
+    int drag = (g_mapPick == RIGHT_BUTTON) ? RIGHT_DRAG    : LEFT_DRAG;
+    int up   = (g_mapPick == RIGHT_BUTTON) ? RIGHT_RELEASE : LEFT_RELEASE;
+    midend_process_key(g_me, px, py, drag);
+    midend_process_key(g_me, px, py, up);
+    g_mapPick = 0;
+  }
+}
+// Abort a half-finished drag by releasing at the source: drop region == source,
+// so upstream discards it (colouring unchanged) and clears its drag state.
+static void mapCancelDrag() {
+  if (!g_mapPick) return;
+  int up = (g_mapPick == RIGHT_BUTTON) ? RIGHT_RELEASE : LEFT_RELEASE;
+  midend_process_key(g_me, g_mapPickPX, g_mapPickPY, up);
+  g_mapPick = 0;
+}
+
 static void startGame(int idx) {
+  g_mapPick = 0;   // drop any half-finished Map drag from the previous game
   if (g_me) { midend_free(g_me); g_me = nullptr; }
   g_me = midend_new(&g_fe, gamelist[idx], &cardputer_drawing_api, &g_fe);
   if (!g_me) return;
@@ -201,11 +235,12 @@ static void drawHelp() {
 static void handlePlaying(puz::InputEvent ev) {
   using puz::Ev;
   switch (ev.kind) {
-    case Ev::BackToChooser: openMenu(); return;
+    case Ev::BackToChooser: mapCancelDrag(); openMenu(); return;
     case Ev::CommandMenu:   g_tab_seen = true; g_state = State::COMMAND; puz::openCommand(); return;
     case Ev::Select:        // Enter: pointer-click at crosshair if pointer on, else cursor-select
       if (g_ptr_on) {
         int px, py; ptrToPuzzle(&px, &py);   // screen -> puzzle coords (zoom-aware)
+        if (onMap()) { mapDragStep(px, py, LEFT_BUTTON); return; }   // pick up / drop colour
         midend_process_key(g_me, px, py, LEFT_BUTTON);
         midend_process_key(g_me, px, py, LEFT_RELEASE);
         ptrTrackClick(PtrSel::Fill);
@@ -214,19 +249,21 @@ static void handlePlaying(puz::InputEvent ev) {
     case Ev::Select2:       // Space: pointer right-click if pointer on, else cursor-select2
       if (g_ptr_on) {
         int px, py; ptrToPuzzle(&px, &py);
+        if (onMap()) { mapDragStep(px, py, RIGHT_BUTTON); return; }  // pick up / pencil-drop
         midend_process_key(g_me, px, py, RIGHT_BUTTON);
         midend_process_key(g_me, px, py, RIGHT_RELEASE);
         ptrTrackClick(PtrSel::Pencil);
       } else midend_process_key(g_me, 0, 0, CURSOR_SELECT2);
       return;
-    case Ev::Restart: midend_restart_game(g_me); return;
-    case Ev::TogglePointer: g_ptr_on = !g_ptr_on; g_ptrSel = PtrSel::None; g_ptrHl = false; return;   // Ctrl+P (plain 'p' belongs to the game)
+    case Ev::Restart: mapCancelDrag(); midend_restart_game(g_me); return;
+    case Ev::TogglePointer: mapCancelDrag(); g_ptr_on = !g_ptr_on; g_ptrSel = PtrSel::None; g_ptrHl = false; return;   // Ctrl+P (plain 'p' belongs to the game)
     case Ev::ZoomPeek: toggleZoom(); return;                // Ctrl+L: toggle live 2x magnifier
     case Ev::PanUp:    panZoom(0, -16); return;             // Ctrl+;,./ pan the zoom window
     case Ev::PanDown:  panZoom(0,  16); return;
     case Ev::PanLeft:  panZoom(-16, 0); return;
     case Ev::PanRight: panZoom( 16, 0); return;
     case Ev::NewGame:
+      mapCancelDrag();
       midend_new_game(g_me); frontend_load_colours(&g_fe, g_me);
       sizeAndCenter();
       midend_force_redraw(g_me); return;
@@ -325,6 +362,13 @@ void loop() {
   for (auto k : cardputer::keysJustPressedEx()) {
     handlePlaying(puz::eventForKey(k));   // Ctrl+P → Ev::TogglePointer, handled in handlePlaying
     if (g_state != State::PLAYING) return;   // a handler changed state
+  }
+
+  // Mid-drag on Map: stream the held button as a DRAG to the live crosshair so
+  // the carried-colour blob tracks the pointer (upstream draws it at ui->dragx).
+  if (g_ptr_on && g_mapPick) {
+    int px, py; ptrToPuzzle(&px, &py);
+    midend_process_key(g_me, px, py, g_mapPick == RIGHT_BUTTON ? RIGHT_DRAG : LEFT_DRAG);
   }
 
   if (g_fe.timer_active) midend_timer(g_me, dt);
