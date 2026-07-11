@@ -129,12 +129,12 @@ for the menu; `Tab` on the list for help.
 
 ## Roadmap
 
-v1.1 ships the 40 games above with an on-device picker, a `Tab` command menu
+v1.1.1 ships the 40 games above with an on-device picker, a `Tab` command menu
 with an in-menu rules viewer, preset/custom sizing, an 8bpp palette render
 canvas, a battery indicator, idle backlight dimming that deepens into
-light-sleep, **flash-backed per-game resume** (every game you've touched
-survives power-off), tilt-pointer recenter, and a non-bricking error path.
-Planned next:
+light-sleep, **per-game resume that survives power-off** (saved to the SD card,
+or internal flash on full-flash installs — so it persists under SD launchers
+too), tilt-pointer recenter, and a non-bricking error path. Planned next:
 
 - **Favorites / star** a game, pinned to the top of the list.
 - **Settings** — brightness, volume, default pointer (via `Tab` on the game list).
