@@ -40,10 +40,22 @@ void drawPicker(const char* const* items, int n, int sel,
     if (suffix && suffix[i] && suffix[i][0]) {
       d.setTextSize(1);
       d.setTextDatum(middle_right);
-      d.drawString(suffix[i], 232, y);
+      d.drawString(suffix[i], 228, y);   // left of the scrollbar gutter
     }
   }
   d.setTextSize(1);
+
+  // Scrollbar: only when the list overflows the visible window. Thumb size
+  // tracks the visible fraction, position tracks sel. Cyan so it reads over
+  // both the white selected bar and the black background.
+  if (n > maxRows) {
+    const int trackTop = 16, trackBot = 128, trackH = trackBot - trackTop;
+    const int sbx = 237;
+    d.drawFastVLine(sbx, trackTop, trackH, d.color565(0x24, 0x40, 0x55));
+    int thumbH = trackH * maxRows / n; if (thumbH < 10) thumbH = 10;
+    int thumbY = trackTop + (trackH - thumbH) * sel / (n - 1);
+    d.fillRect(sbx - 1, thumbY, 3, thumbH, TFT_CYAN);
+  }
 }
 
 }  // namespace puz

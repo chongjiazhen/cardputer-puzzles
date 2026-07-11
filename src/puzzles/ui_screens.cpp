@@ -118,9 +118,9 @@ void ruleKey(InputEvent ev) {
 }
 
 // ---------------- command menu ----------------
-static const char* kCmdItems[]   = {"Size / Type","New game","Restart","Solve","Undo","Redo","Pointer","Zoom 2x","Rules"};
-static const char* kCmdSuffix[]  = {"",           "Ctrl+N",  "Ctrl+R", "",     "Ctrl+Z","Ctrl+Y","Ctrl+P","Ctrl+L",""};
-static const int   kCmdN = 9;
+static const char* kCmdItems[]   = {"Size / Type","New game","Restart","Solve","Undo","Redo","Pointer","Recenter","Zoom 2x","Pan (zoom)","Rules"};
+static const char* kCmdSuffix[]  = {"",           "Ctrl+N",  "Ctrl+R", "",     "Ctrl+Z","Ctrl+Y","Ctrl+P","Ctrl+Sp", "Ctrl+L", "C+;,./",    ""};
+static const int   kCmdN = 11;
 static int g_cmdSel = 0;
 
 static void drawCommand() { drawPicker(kCmdItems, kCmdN, g_cmdSel, "Menu", "Tab", kCmdSuffix, 5); }
@@ -140,8 +140,10 @@ void commandKey(InputEvent ev) {
         case 4: midend_process_key(g_ui.me, 0, 0, UI_UNDO); g_ui.resume(); break;
         case 5: midend_process_key(g_ui.me, 0, 0, UI_REDO); g_ui.resume(); break;
         case 6: g_ui.togglePointer(); g_ui.resume(); break;
-        case 7: g_ui.toggleZoom(); g_ui.resume(); break;
-        case 8: g_ui.resume(); openRules(); break;
+        case 7: g_ui.recenter(); g_ui.resume(); break;
+        case 8: g_ui.toggleZoom(); g_ui.resume(); break;
+        case 9: g_ui.resume(); break;   // Pan is a reference entry: panning is Ctrl+;,./ while zoomed
+        case 10: g_ui.resume(); openRules(); break;
       }
       break;
     default: break;
