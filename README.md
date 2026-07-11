@@ -23,6 +23,23 @@ Train Tracks · Twiddle · Undead · Unequal · Unruly · Untangle
 - 240x135 display
 - Primary / tested target: Cardputer ADV
 
+## Install (prebuilt)
+
+Grab a `.bin` from [Releases](../../releases) — no toolchain needed.
+
+- **Full flash (recommended)** — `cardputer-puzzles-merged.bin`, written at offset `0x0`.
+  Self-contained (bootloader + partition table + app) and the only path that guarantees
+  **save-state persistence**, since it installs the LittleFS data partition this firmware
+  expects. Flash via [M5Burner](https://docs.m5stack.com/en/download) ("Custom firmware"),
+  a web flasher, or esptool:
+  ```sh
+  esptool --chip esp32s3 write-flash 0x0 cardputer-puzzles-merged.bin
+  ```
+- **App-only** — `firmware.bin`, for OTA / SD-card launchers such as the
+  [M5Stack Launcher](https://bmorcelli.github.io/Launcher/). Runs fine, but it keeps the
+  device's existing partition table — resume/persistence works **only** if that table has a
+  `spiffs` data partition. For guaranteed persistence, use the full-flash bin above.
+
 ## Building and flashing
 
 ```sh
@@ -110,16 +127,16 @@ for the menu; `Tab` on the list for help.
 
 ## Roadmap
 
-v1.0 ships the 40 games above with an on-device picker, a `Tab` command menu
+v1.1 ships the 40 games above with an on-device picker, a `Tab` command menu
 with an in-menu rules viewer, preset/custom sizing, an 8bpp palette render
 canvas, a battery indicator, idle backlight dimming that deepens into
-light-sleep, in-memory resume of **every** game you've touched (not just the
-last), tilt-pointer recenter, and a non-bricking error path. Planned next:
+light-sleep, **flash-backed per-game resume** (every game you've touched
+survives power-off), tilt-pointer recenter, and a non-bricking error path.
+Planned next:
 
 - **Favorites / star** a game, pinned to the top of the list.
 - **Settings** — brightness, volume, default pointer (via `Tab` on the game list).
-- **Persistence** (NVS/flash) — keep the per-game resume state across power-off
-  (current resume is in-memory only, lost on reboot), remember per-game size.
+- **Remember per-game size** — persist the chosen preset/custom dimensions too.
 
 ## Known limitations
 
