@@ -25,17 +25,19 @@ Train Tracks · Twiddle · Undead · Unequal · Unruly · Untangle
 
 ## Install (prebuilt)
 
-Grab a `.bin` from [Releases](../../releases) — no toolchain needed.
+Grab a `.bin` from the [latest release](../../releases/latest) — no toolchain needed.
+Both assets carry the version in the name (`…-vX.Y-…`); a flashed device also shows it
+in the `Tab`→Help screen.
 
-- **Full flash (recommended)** — `cardputer-puzzles-merged.bin`, written at offset `0x0`.
+- **Full flash (recommended)** — `cardputer-puzzles-vX.Y-merged.bin`, written at offset `0x0`.
   Self-contained (bootloader + partition table + app) and the only path that guarantees
   **save-state persistence**, since it installs the LittleFS data partition this firmware
   expects. Flash via [M5Burner](https://docs.m5stack.com/en/download) ("Custom firmware"),
   a web flasher, or esptool:
   ```sh
-  esptool --chip esp32s3 write-flash 0x0 cardputer-puzzles-merged.bin
+  esptool --chip esp32s3 write-flash 0x0 cardputer-puzzles-vX.Y-merged.bin
   ```
-- **App-only** — `firmware.bin`, for OTA / SD-card launchers such as the
+- **App-only** — `cardputer-puzzles-vX.Y-app.bin`, for OTA / SD-card launchers such as the
   [M5Stack Launcher](https://bmorcelli.github.io/Launcher/). Runs fine, but it keeps the
   device's existing partition table — resume/persistence works **only** if that table has a
   `spiffs` data partition. For guaranteed persistence, use the full-flash bin above.
