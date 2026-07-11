@@ -34,6 +34,7 @@ struct UiCtx {
   void (*toRules)();        // set g_state = RULES
   void (*togglePointer)();  // flip the tilt pointer
   void (*toggleZoom)();     // flip the 2x magnifier
+  void (*recenter)();       // zero the tilt neutral to the current hold pose
 };
 void uiBind(const UiCtx& c);
 void openCommand();  void commandKey(InputEvent ev);

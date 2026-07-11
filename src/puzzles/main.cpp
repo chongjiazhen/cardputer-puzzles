@@ -1,4 +1,6 @@
 #include <Arduino.h>
+#include <string>
+#include <vector>
 #include "cardputer_hw.h"
 #include "frontend.h"
 #include "presets.h"
@@ -13,6 +15,7 @@ static midend *g_me = nullptr;
 static uint32_t g_last_ms;
 
 static puz::Pointer g_ptr{120, 67};
+static float g_tiltBiasX = 0, g_tiltBiasY = 0;   // tilt neutral (accel at last recenter); Ctrl+Space rezeros
 static bool g_ptr_on = false;   // default cursor mode; Ctrl+P toggles the tilt pointer
 static const char *g_curGameName = "-";   // current game name, for the crash-report context
 static int g_curIdx = -1;                 // currently-loaded game; re-entering it resumes in-progress
@@ -51,6 +54,12 @@ static void toType()   { g_state = State::TYPE_MENU; }
 static void toConfig() { g_state = State::CONFIG_EDIT; }
 static void toRules()    { g_state = State::RULES; }
 static void togglePointer() { g_ptr_on = !g_ptr_on; }
+// Zero the tilt neutral to the current hold pose (Ctrl+Space or the Tab menu).
+// Captures even when the pointer is off -- harmless, applies when next enabled.
+static void recenterPointer() {
+  cardputer::Imu imu;
+  if (cardputer::imuRead(imu)) { g_tiltBiasX = -imu.ax; g_tiltBiasY = imu.ay; }
+}
 
 // --- zoom (Ctrl+L): live 2x magnifier, game keeps playing ---
 // d_end pushes the frame magnified around (zoomX,zoomY) while fe.zoom is set
@@ -139,25 +148,57 @@ static void mapCancelDrag() {
   g_mapPick = 0;
 }
 
+// --- per-game in-RAM state cache (survives switching between all 40 titles;
+// lost on power-cycle -- flash-backed persistence is a later upgrade) ---
+static std::vector<std::string> g_saved;   // sized to gamecount in setup(); [idx] = serialised state or empty
+static void serWrite(void *ctx, const void *buf, int len) {
+  ((std::string *)ctx)->append((const char *)buf, (size_t)len);
+}
+struct SerReadCtx { const std::string *s; size_t pos; };
+static bool serRead(void *ctx, void *buf, int len) {
+  SerReadCtx *r = (SerReadCtx *)ctx;
+  if (r->pos + (size_t)len > r->s->size()) return false;
+  memcpy(buf, r->s->data() + r->pos, (size_t)len);
+  r->pos += (size_t)len;
+  return true;
+}
+// Stash the currently-loaded game's full state before it's freed on a switch.
+static void saveCurrentGame() {
+  if (!g_me || g_curIdx < 0 || g_curIdx >= (int)g_saved.size()) return;
+  std::string blob;
+  midend_serialise(g_me, serWrite, &blob);
+  g_saved[g_curIdx] = std::move(blob);
+}
+
 static void startGame(int idx) {
   g_mapPick = 0;   // drop any half-finished Map drag from the previous game
+  saveCurrentGame();   // keep the outgoing game's progress (RAM) before freeing it
   if (g_me) { midend_free(g_me); g_me = nullptr; }
   g_me = midend_new(&g_fe, gamelist[idx], &cardputer_drawing_api, &g_fe);
   if (!g_me) return;
   g_curIdx = idx;
   g_curGameName = gamelist[idx]->name;
   g_fe.zoom = false;   // fresh game starts unmagnified
-  const char *p = presetFor(g_curGameName);
-  if (p) midend_game_id(g_me, p);  // returns nullptr on success; on error params stay default
-  frontend_set_crash(g_curGameName, p);   // crash ctx before generation (name + preset/default)
-  midend_new_game(g_me);
+  // Restore a stashed board if we have one for this title; else generate fresh.
+  bool restored = false;
+  if (idx < (int)g_saved.size() && !g_saved[idx].empty()) {
+    frontend_set_crash(g_curGameName, "restore");
+    SerReadCtx rc{ &g_saved[idx], 0 };
+    restored = (midend_deserialise(g_me, serRead, &rc) == nullptr);   // NULL == success
+  }
+  if (!restored) {
+    const char *p = presetFor(g_curGameName);
+    if (p) midend_game_id(g_me, p);  // returns nullptr on success; on error params stay default
+    frontend_set_crash(g_curGameName, p);   // crash ctx before generation (name + preset/default)
+    midend_new_game(g_me);
+  }
   { char *id = midend_get_game_id(g_me);   // refine with the resolved game-id (desc exists now)
     frontend_set_crash(g_curGameName, id); sfree(id); }
   frontend_load_colours(&g_fe, g_me);
   sizeAndCenter();
   g_fe.canvas->fillSprite(UI_BLACK);   // clear stale pixels from the previous game
   midend_force_redraw(g_me);
-  puz::uiBind({ g_me, &reloadResumePlaying, &resumePlaying, &toType, &toConfig, &toRules, &togglePointer, &toggleZoom });
+  puz::uiBind({ g_me, &reloadResumePlaying, &resumePlaying, &toType, &toConfig, &toRules, &togglePointer, &toggleZoom, &recenterPointer });
   // One-shot discoverability splash: shown on the first game entry per boot, then never again.
   if (!g_tab_seen) {
     auto &d = M5.Display;
@@ -197,6 +238,7 @@ void setup() {
   // it. 35 games honour this flag (incl. Map's pipette pickup). Value must lead
   // with y/Y/t/T -- getenv_bool (upstream misc.c) tests only the first char.
   setenv("PUZZLES_SHOW_CURSOR", "y", 1);
+  g_saved.resize(gamecount);   // one in-RAM save slot per game
 
   g_fe.canvas = new M5Canvas(&M5.Display);
   g_fe.canvas->setColorDepth(lgfx::color_depth_t::palette_8bit);   // 8bpp palette: 32KB vs 64KB at 16bpp
@@ -224,7 +266,7 @@ static void drawHelp() {
   d.setTextColor(TFT_WHITE, TFT_BLACK);
   const char *L[] = {";,./        move cursor", "Enter/Space select / mark",
                      "Ctrl+Z / Y  undo / redo", "Ctrl+N / R  new / restart",
-                     "Tab         menu (in game)", "Ctrl+P      tilt pointer",
+                     "Tab         menu (in game)", "Ctrl+P/Sp   pointer/recenter",
                      "Ctrl+L zoom  Ctrl+;,./ pan"};
   for (int i = 0; i < 7; i++) d.drawString(L[i], 6, 20 + i * 16);
   d.setTextColor(d.color565(0x67, 0x88, 0x99), TFT_BLACK);
@@ -257,6 +299,7 @@ static void handlePlaying(puz::InputEvent ev) {
       return;
     case Ev::Restart: mapCancelDrag(); midend_restart_game(g_me); return;
     case Ev::TogglePointer: mapCancelDrag(); g_ptr_on = !g_ptr_on; g_ptrSel = PtrSel::None; g_ptrHl = false; return;   // Ctrl+P (plain 'p' belongs to the game)
+    case Ev::RecenterPointer: recenterPointer(); return;   // Ctrl+Space
     case Ev::ZoomPeek: toggleZoom(); return;                // Ctrl+L: toggle live 2x magnifier
     case Ev::PanUp:    panZoom(0, -16); return;             // Ctrl+;,./ pan the zoom window
     case Ev::PanDown:  panZoom(0,  16); return;
@@ -346,7 +389,9 @@ void loop() {
 
   cardputer::Imu imu;
   if (g_ptr_on && cardputer::imuRead(imu)) {
-    puz::pointerStep(g_ptr, -imu.ax, imu.ay, dt, 240, 135);  // ADV accel X inverted vs screen
+    // Subtract the recentred neutral so any comfortable hold angle reads as
+    // level -- without it the rate-control crosshair drifts unless held flat.
+    puz::pointerStep(g_ptr, -imu.ax - g_tiltBiasX, imu.ay - g_tiltBiasY, dt, 240, 135);  // ADV accel X inverted vs screen
     if (g_fe.zoom) {
       // Edge-pan: crosshair pushed against a screen edge drags the zoom window
       // along, so the pointer can reach the whole board without Ctrl+panning.

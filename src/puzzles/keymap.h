@@ -21,6 +21,7 @@ inline InputEvent eventForKey(KeyPress k) {
       case 'n': case 'N': return {Ev::NewGame, 0};
       case 'r': case 'R': return {Ev::Restart, 0};
       case 'p': case 'P': return {Ev::TogglePointer, 0};  // plain 'p' belongs to the game
+      case ' ':           return {Ev::RecenterPointer, 0}; // zero the tilt neutral to the current hold
       case 'l': case 'L': return {Ev::ZoomPeek, 0};       // toggle 2x magnifier (plain 'l' belongs to the game)
       // Ctrl+arrow-cluster pans the zoom window. With ctrl held the M5Cardputer
       // keyboard lib reports value_second (the SHIFTED char) in `word` -- see
