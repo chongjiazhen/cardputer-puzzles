@@ -91,13 +91,19 @@ Solo's hex digits, etc. — work). Frontend commands live on Ctrl, Tab, and `` `
 | digits / letters / `⌫` | Per-game input |
 | `Ctrl`+`Z` / `Ctrl`+`Y` | Undo / Redo |
 | `Ctrl`+`N` / `Ctrl`+`R` | New game / Restart |
-| `Tab` | **Menu** (in game: size/type, new, restart, solve, undo/redo, pointer, zoom, rules) · **Help** (on the game list) |
-| `Ctrl`+`P` | Toggle the IMU tilt pointer (then Enter/Space click at the crosshair) |
+| `Tab` | **Menu** (in game: size/type, new, restart, solve, undo/redo, pointer, recenter, zoom, pan, rules) · **Help** (on the game list) |
+| `Ctrl`+`P` | Toggle the IMU tilt pointer (then Enter/Space act at the crosshair) |
+| `Ctrl`+`Space` | Recenter the tilt pointer — set the current hold as neutral (works at any posture) |
 | `Ctrl`+`L` | Toggle 2× zoom — play continues magnified; `Ctrl`+`;` `.` `,` `/` pans the view |
 | `` ` `` | Back (to the game list / out of a menu) |
 
+**Map** colours by drag: `Enter` picks up the colour under the cursor/crosshair,
+move, `Enter` drops it (`Space` = pencil). In pointer mode the pickup is held
+across two presses (source → destination).
+
 The game list and menus are a scrolling picker: `;`/`.` move, `Enter` selects,
-`` ` `` backs out. Press `Tab` in a game for the menu; `Tab` on the list for help.
+`` ` `` backs out, and a scrollbar tracks your position. Press `Tab` in a game
+for the menu; `Tab` on the list for help.
 
 > The `;` `.` `,` `/` cursor cluster is confirmed on the ADV. `src/puzzles/keymap.h`
 > is the single place to remap keys.
@@ -107,15 +113,13 @@ The game list and menus are a scrolling picker: `;`/`.` move, `Enter` selects,
 v1.0 ships the 40 games above with an on-device picker, a `Tab` command menu
 with an in-menu rules viewer, preset/custom sizing, an 8bpp palette render
 canvas, a battery indicator, idle backlight dimming that deepens into
-light-sleep, in-memory resume of the game you left, and a non-bricking error
-path. Planned next:
+light-sleep, in-memory resume of **every** game you've touched (not just the
+last), tilt-pointer recenter, and a non-bricking error path. Planned next:
 
 - **Favorites / star** a game, pinned to the top of the list.
 - **Settings** — brightness, volume, default pointer (via `Tab` on the game list).
-- **Persistence** (NVS) — save resume state across power-off (current resume
-  is in-memory only, lost on reboot), remember per-game size.
-- **Gyro recenter** — set the current tilt as neutral, so the pointer works in
-  any posture.
+- **Persistence** (NVS/flash) — keep the per-game resume state across power-off
+  (current resume is in-memory only, lost on reboot), remember per-game size.
 
 ## Known limitations
 
