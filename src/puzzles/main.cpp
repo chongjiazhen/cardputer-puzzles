@@ -1,4 +1,5 @@
 #include <Arduino.h>
+#include <LittleFS.h>
 #include <string>
 #include <vector>
 #include "cardputer_hw.h"
@@ -148,9 +149,13 @@ static void mapCancelDrag() {
   g_mapPick = 0;
 }
 
-// --- per-game in-RAM state cache (survives switching between all 40 titles;
-// lost on power-cycle -- flash-backed persistence is a later upgrade) ---
+// --- per-game save state: a write-through cache, RAM (g_saved) over flash ---
+// Each of the 40 games keeps its full serialised state so switching titles (and
+// power-cycling) resumes the exact board. g_saved is the hot cache; /<slug>.sav
+// on LittleFS is the durable copy, lazily loaded on first entry (no boot scan).
 static std::vector<std::string> g_saved;   // sized to gamecount in setup(); [idx] = serialised state or empty
+static uint32_t g_dirtyMs = 0;             // millis() of last state-changing keystroke; 0 = clean. Autosave debounce.
+static const uint32_t AUTOSAVE_MS = 3000;  // persist the open game this long after the last change
 static void serWrite(void *ctx, const void *buf, int len) {
   ((std::string *)ctx)->append((const char *)buf, (size_t)len);
 }
@@ -162,30 +167,70 @@ static bool serRead(void *ctx, void *buf, int len) {
   r->pos += (size_t)len;
   return true;
 }
-// Stash the currently-loaded game's full state before it's freed on a switch.
-static void saveCurrentGame() {
-  if (!g_me || g_curIdx < 0 || g_curIdx >= (int)g_saved.size()) return;
+static std::string savePath(int idx) { return std::string("/") + gamelist[idx]->htmlhelp_topic + ".sav"; }
+
+// Persist the currently-loaded game. Serialise, dedup against the cached copy
+// (so idle/navigation re-saves and per-frame drags cost nothing), then update
+// RAM and write flash atomically (temp + rename -> a power-cut can't leave a
+// half-written .sav). Cadence is deliberately save-on-leave + a ~3s autosave
+// debounce, NOT per-move: that bounds flash wear to hundreds of writes/day
+// (100k erase cycles/sector + wear-levelling => effectively never). Do not move
+// this to a per-keystroke write.
+static void persistGame(int idx) {
+  if (!g_me || idx < 0 || idx >= (int)g_saved.size()) return;
   std::string blob;
   midend_serialise(g_me, serWrite, &blob);
-  g_saved[g_curIdx] = std::move(blob);
+  if (blob == g_saved[idx]) return;                 // already durable (g_saved mirrors flash)
+  std::string path = savePath(idx), tmp = path + ".t";
+  File f = LittleFS.open(tmp.c_str(), "w");
+  if (!f) return;                                   // flash unavailable: g_saved unchanged -> retried next time
+  bool ok = f.write((const uint8_t *)blob.data(), blob.size()) == blob.size();
+  f.close();
+  if (!ok) { LittleFS.remove(tmp.c_str()); return; }
+  // Atomically swap tmp over the live .sav. rename-over-existing is a single
+  // metadata commit on littlefs, so a power-cut leaves EITHER the old save or
+  // the new one intact -- never a gap (the earlier remove-then-rename had one).
+  if (!LittleFS.rename(tmp.c_str(), path.c_str())) {
+    LittleFS.remove(path.c_str());                  // fallback: FS that won't overwrite on rename
+    if (!LittleFS.rename(tmp.c_str(), path.c_str())) { LittleFS.remove(tmp.c_str()); return; }
+  }
+  g_saved[idx] = std::move(blob);                   // durable now -> mirror in RAM (also the dedup baseline)
+}
+// Restore the freshly-created g_me for `idx`: cached RAM -> lazily-loaded flash
+// -> report miss so the caller generates fresh. A blob that fails to deserialise
+// (corrupt / version drift) is discarded, so restore degrades to a new game.
+static bool restoreGame(int idx) {
+  if (idx < 0 || idx >= (int)g_saved.size()) return false;
+  if (g_saved[idx].empty()) {                       // lazy-load from flash
+    File f = LittleFS.open(savePath(idx).c_str(), "r");
+    if (f) {
+      size_t n = f.size();
+      g_saved[idx].resize(n);
+      if (n) f.read((uint8_t *)g_saved[idx].data(), n);
+      f.close();
+    }
+  }
+  if (g_saved[idx].empty()) return false;
+  SerReadCtx rc{ &g_saved[idx], 0 };
+  if (midend_deserialise(g_me, serRead, &rc) == nullptr) return true;   // NULL == success
+  g_saved[idx].clear();                             // corrupt: drop cache + file, fall back to fresh
+  LittleFS.remove(savePath(idx).c_str());
+  return false;
 }
 
 static void startGame(int idx) {
   g_mapPick = 0;   // drop any half-finished Map drag from the previous game
-  saveCurrentGame();   // keep the outgoing game's progress (RAM) before freeing it
+  persistGame(g_curIdx);   // flush the outgoing game (RAM + flash) before freeing it
+  g_dirtyMs = 0;
   if (g_me) { midend_free(g_me); g_me = nullptr; }
   g_me = midend_new(&g_fe, gamelist[idx], &cardputer_drawing_api, &g_fe);
   if (!g_me) return;
   g_curIdx = idx;
   g_curGameName = gamelist[idx]->name;
   g_fe.zoom = false;   // fresh game starts unmagnified
-  // Restore a stashed board if we have one for this title; else generate fresh.
-  bool restored = false;
-  if (idx < (int)g_saved.size() && !g_saved[idx].empty()) {
-    frontend_set_crash(g_curGameName, "restore");
-    SerReadCtx rc{ &g_saved[idx], 0 };
-    restored = (midend_deserialise(g_me, serRead, &rc) == nullptr);   // NULL == success
-  }
+  // Restore a saved board (RAM or flash) if we have one; else generate fresh.
+  frontend_set_crash(g_curGameName, "restore");
+  bool restored = restoreGame(idx);
   if (!restored) {
     const char *p = presetFor(g_curGameName);
     if (p) midend_game_id(g_me, p);  // returns nullptr on success; on error params stay default
@@ -215,6 +260,8 @@ static void startGame(int idx) {
 }
 
 static void openMenu() {
+  persistGame(g_curIdx);   // parking a game -> flush RAM+flash now (autosave loop won't run in MENU)
+  g_dirtyMs = 0;
   g_state = State::MENU;
   puz::drawChooser(g_sel);
 }
@@ -238,7 +285,8 @@ void setup() {
   // it. 35 games honour this flag (incl. Map's pipette pickup). Value must lead
   // with y/Y/t/T -- getenv_bool (upstream misc.c) tests only the first char.
   setenv("PUZZLES_SHOW_CURSOR", "y", 1);
-  g_saved.resize(gamecount);   // one in-RAM save slot per game
+  g_saved.resize(gamecount);   // one save slot per game
+  LittleFS.begin(true);        // durable per-game .sav store; format on first boot / corruption
 
   g_fe.canvas = new M5Canvas(&M5.Display);
   g_fe.canvas->setColorDepth(lgfx::color_depth_t::palette_8bit);   // 8bpp palette: 32KB vs 64KB at 16bpp
@@ -407,14 +455,20 @@ void loop() {
   for (auto k : cardputer::keysJustPressedEx()) {
     handlePlaying(puz::eventForKey(k));   // Ctrl+P → Ev::TogglePointer, handled in handlePlaying
     if (g_state != State::PLAYING) return;   // a handler changed state
+    g_dirtyMs = now;   // an in-game keystroke -> arm autosave (persistGame dedups no-op changes)
   }
 
   // Mid-drag on Map: stream the held button as a DRAG to the live crosshair so
   // the carried-colour blob tracks the pointer (upstream draws it at ui->dragx).
+  // Frame-driven (not a keystroke) so it never arms autosave.
   if (g_ptr_on && g_mapPick) {
     int px, py; ptrToPuzzle(&px, &py);
     midend_process_key(g_me, px, py, g_mapPick == RIGHT_BUTTON ? RIGHT_DRAG : LEFT_DRAG);
   }
+
+  // Autosave the open game once it's been idle AUTOSAVE_MS since the last change,
+  // so a power-off (no shutdown hook exists) loses at most a few seconds. Deduped.
+  if (g_dirtyMs && (uint32_t)(now - g_dirtyMs) >= AUTOSAVE_MS) { persistGame(g_curIdx); g_dirtyMs = 0; }
 
   if (g_fe.timer_active) midend_timer(g_me, dt);
   midend_redraw(g_me);
