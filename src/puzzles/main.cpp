@@ -1,4 +1,7 @@
 #include <Arduino.h>
+#include <FS.h>
+#include <SD.h>
+#include <SPI.h>
 #include <LittleFS.h>
 #include <string>
 #include <vector>
@@ -159,6 +162,12 @@ static void mapCancelDrag() {
 // power-cycling) resumes the exact board. g_saved is the hot cache; /<slug>.sav
 // on LittleFS is the durable copy, lazily loaded on first entry (no boot scan).
 static std::vector<std::string> g_saved;   // sized to gamecount in setup(); [idx] = serialised state or empty
+// Chosen save backend: SD when a card is present (survives Launcher/app-only
+// installs, which run under the Launcher's partition table with no LittleFS
+// data partition), else internal LittleFS (full-flash installs). null = no
+// durable store -> saves stay in RAM only.
+static fs::FS *g_fs = nullptr;
+static std::string g_saveDir;              // "/puzzles" on SD, "" (flat root) on LittleFS
 static uint32_t g_dirtyMs = 0;             // millis() of last state-changing keystroke; 0 = clean. Autosave debounce.
 static const uint32_t AUTOSAVE_MS = 3000;  // persist the open game this long after the last change
 static void serWrite(void *ctx, const void *buf, int len) {
@@ -172,42 +181,41 @@ static bool serRead(void *ctx, void *buf, int len) {
   r->pos += (size_t)len;
   return true;
 }
-static std::string savePath(int idx) { return std::string("/") + gamelist[idx]->htmlhelp_topic + ".sav"; }
+static std::string savePath(int idx) { return g_saveDir + "/" + gamelist[idx]->htmlhelp_topic + ".sav"; }
 
 // Persist the currently-loaded game. Serialise, dedup against the cached copy
 // (so idle/navigation re-saves and per-frame drags cost nothing), then update
-// RAM and write flash atomically (temp + rename -> a power-cut can't leave a
-// half-written .sav). Cadence is deliberately save-on-leave + a ~3s autosave
-// debounce, NOT per-move: that bounds flash wear to hundreds of writes/day
+// RAM and write the backend atomically (temp + rename -> a power-cut can't leave
+// a half-written .sav). Cadence is deliberately save-on-leave + a ~3s autosave
+// debounce, NOT per-move: that bounds flash/SD wear to hundreds of writes/day
 // (100k erase cycles/sector + wear-levelling => effectively never). Do not move
 // this to a per-keystroke write.
 static void persistGame(int idx) {
-  if (!g_me || idx < 0 || idx >= (int)g_saved.size()) return;
+  if (!g_fs || !g_me || idx < 0 || idx >= (int)g_saved.size()) return;
   std::string blob;
   midend_serialise(g_me, serWrite, &blob);
-  if (blob == g_saved[idx]) return;                 // already durable (g_saved mirrors flash)
+  if (blob == g_saved[idx]) return;                 // already durable (g_saved mirrors the backend)
   std::string path = savePath(idx), tmp = path + ".t";
-  File f = LittleFS.open(tmp.c_str(), "w");
-  if (!f) return;                                   // flash unavailable: g_saved unchanged -> retried next time
+  File f = g_fs->open(tmp.c_str(), "w");
+  if (!f) return;                                   // backend unavailable: g_saved unchanged -> retried next time
   bool ok = f.write((const uint8_t *)blob.data(), blob.size()) == blob.size();
   f.close();
-  if (!ok) { LittleFS.remove(tmp.c_str()); return; }
-  // Atomically swap tmp over the live .sav. rename-over-existing is a single
-  // metadata commit on littlefs, so a power-cut leaves EITHER the old save or
-  // the new one intact -- never a gap (the earlier remove-then-rename had one).
-  if (!LittleFS.rename(tmp.c_str(), path.c_str())) {
-    LittleFS.remove(path.c_str());                  // fallback: FS that won't overwrite on rename
-    if (!LittleFS.rename(tmp.c_str(), path.c_str())) { LittleFS.remove(tmp.c_str()); return; }
+  if (!ok) { g_fs->remove(tmp.c_str()); return; }
+  // Swap tmp over the live .sav. On littlefs rename-over-existing is one atomic
+  // metadata commit; on FAT (SD) it won't overwrite, so fall back to remove+rename.
+  if (!g_fs->rename(tmp.c_str(), path.c_str())) {
+    g_fs->remove(path.c_str());
+    if (!g_fs->rename(tmp.c_str(), path.c_str())) { g_fs->remove(tmp.c_str()); return; }
   }
   g_saved[idx] = std::move(blob);                   // durable now -> mirror in RAM (also the dedup baseline)
 }
-// Restore the freshly-created g_me for `idx`: cached RAM -> lazily-loaded flash
+// Restore the freshly-created g_me for `idx`: cached RAM -> lazily-loaded backend
 // -> report miss so the caller generates fresh. A blob that fails to deserialise
 // (corrupt / version drift) is discarded, so restore degrades to a new game.
 static bool restoreGame(int idx) {
   if (idx < 0 || idx >= (int)g_saved.size()) return false;
-  if (g_saved[idx].empty()) {                       // lazy-load from flash
-    File f = LittleFS.open(savePath(idx).c_str(), "r");
+  if (g_saved[idx].empty() && g_fs) {               // lazy-load from the backend
+    File f = g_fs->open(savePath(idx).c_str(), "r");
     if (f) {
       size_t n = f.size();
       g_saved[idx].resize(n);
@@ -219,7 +227,7 @@ static bool restoreGame(int idx) {
   SerReadCtx rc{ &g_saved[idx], 0 };
   if (midend_deserialise(g_me, serRead, &rc) == nullptr) return true;   // NULL == success
   g_saved[idx].clear();                             // corrupt: drop cache + file, fall back to fresh
-  LittleFS.remove(savePath(idx).c_str());
+  if (g_fs) g_fs->remove(savePath(idx).c_str());
   return false;
 }
 
@@ -291,7 +299,16 @@ void setup() {
   // with y/Y/t/T -- getenv_bool (upstream misc.c) tests only the first char.
   setenv("PUZZLES_SHOW_CURSOR", "y", 1);
   g_saved.resize(gamecount);   // one save slot per game
-  if (!LittleFS.begin(false)) LittleFS.begin(true);  // mount the .sav store; format only if needed (first boot / corrupt)
+  // Pick a save backend. Prefer the SD card: it survives Launcher/app-only
+  // installs (which run under the Launcher's partition table -- no LittleFS data
+  // partition). Fall back to internal LittleFS for full-flash installs with no
+  // card. SD pins are the Cardputer's SPI: SCK 40 / MISO 39 / MOSI 14 / CS 12.
+  SPI.begin(40, 39, 14, 12);
+  if (SD.begin(12, SPI, 25000000)) {
+    g_fs = &SD; g_saveDir = "/puzzles"; SD.mkdir("/puzzles");
+  } else if (LittleFS.begin(false) || LittleFS.begin(true)) {
+    g_fs = &LittleFS; g_saveDir = "";               // flat root on the internal partition
+  }
 
   g_fe.canvas = new M5Canvas(&M5.Display);
   g_fe.canvas->setColorDepth(lgfx::color_depth_t::palette_8bit);   // 8bpp palette: 32KB vs 64KB at 16bpp
