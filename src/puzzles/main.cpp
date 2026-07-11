@@ -11,6 +11,11 @@
 #include "pointer.h"
 #include "params_ui.h"
 
+// Solo (and other backtracking generators) recurse deep during midend_new_game.
+// Arduino's default loop-task stack is 8KB -> instant panic on generate despite
+// ~300KB free heap. Give the loop task a roomy stack; heap has plenty to spare.
+SET_LOOP_TASK_STACK_SIZE(32 * 1024);
+
 static frontend g_fe;
 static midend *g_me = nullptr;
 static uint32_t g_last_ms;
@@ -286,7 +291,7 @@ void setup() {
   // with y/Y/t/T -- getenv_bool (upstream misc.c) tests only the first char.
   setenv("PUZZLES_SHOW_CURSOR", "y", 1);
   g_saved.resize(gamecount);   // one save slot per game
-  LittleFS.begin(true);        // durable per-game .sav store; format on first boot / corruption
+  if (!LittleFS.begin(false)) LittleFS.begin(true);  // mount the .sav store; format only if needed (first boot / corrupt)
 
   g_fe.canvas = new M5Canvas(&M5.Display);
   g_fe.canvas->setColorDepth(lgfx::color_depth_t::palette_8bit);   // 8bpp palette: 32KB vs 64KB at 16bpp
