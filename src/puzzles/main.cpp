@@ -140,12 +140,17 @@ static void mapDragStep(int px, int py, int down) {
   if (!g_mapPick) {                       // press 1: pick up colour at source
     midend_process_key(g_me, px, py, down);
     g_mapPick = down; g_mapPickPX = px; g_mapPickPY = py;
+    // Reflect which button is armed in the crosshair glyph, same axis as every
+    // other game: right (pencil) -> blue X, left (fill) -> red +. Held only for
+    // the pipette's lifetime; cleared on drop/cancel below.
+    g_ptrSel = (down == RIGHT_BUTTON) ? PtrSel::Pencil : PtrSel::Fill;
   } else {                                // press 2: drop at destination
     int drag = (g_mapPick == RIGHT_BUTTON) ? RIGHT_DRAG    : LEFT_DRAG;
     int up   = (g_mapPick == RIGHT_BUTTON) ? RIGHT_RELEASE : LEFT_RELEASE;
     midend_process_key(g_me, px, py, drag);
     midend_process_key(g_me, px, py, up);
     g_mapPick = 0;
+    g_ptrSel = PtrSel::None;              // pipette done: back to the neutral crosshair
   }
 }
 // Abort a half-finished drag by releasing at the source: drop region == source,
@@ -155,6 +160,7 @@ static void mapCancelDrag() {
   int up = (g_mapPick == RIGHT_BUTTON) ? RIGHT_RELEASE : LEFT_RELEASE;
   midend_process_key(g_me, g_mapPickPX, g_mapPickPY, up);
   g_mapPick = 0;
+  g_ptrSel = PtrSel::None;   // abandoned pipette: clear the armed-glyph too
 }
 
 // --- per-game save state: a write-through cache, RAM (g_saved) over flash ---
@@ -233,6 +239,7 @@ static bool restoreGame(int idx) {
 
 static void startGame(int idx) {
   g_mapPick = 0;   // drop any half-finished Map drag from the previous game
+  g_ptrSel = PtrSel::None; g_ptrHl = false;   // neutral crosshair for the new game (no armed-glyph carryover)
   persistGame(g_curIdx);   // flush the outgoing game (RAM + flash) before freeing it
   g_dirtyMs = 0;
   if (g_me) { midend_free(g_me); g_me = nullptr; }
