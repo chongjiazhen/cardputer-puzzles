@@ -142,7 +142,13 @@ extern "C" void frontend_push(frontend *fe) {
   M5Canvas *cv = fe->canvas;
   if (fe->zoom) {
     cv->setPivot(fe->zoomX, fe->zoomY);
-    cv->pushRotateZoom(&M5.Display, 120, 67, 0.0f, 2.0f, 2.0f);
+    // Overscan slightly past 2.0x so the magnified frame fully covers the panel
+    // edge. At exact 2.0 the scaled sprite edge lands on the last panel column/row
+    // (when a pan hits the zoom clamp), and pushRotateZoom's sub-pixel rounding can
+    // leave that outermost line unpainted -- a stale crosshair/drag-blob pixel there
+    // survives across frames as a smear. 2.02 covers ~2.4px of edge; the resulting
+    // <1px drift vs the /2 pointer-coord math (ptrToPuzzle) is below crosshair tol.
+    cv->pushRotateZoom(&M5.Display, 120, 67, 0.0f, 2.02f, 2.02f);
   } else {
     cv->pushSprite(&M5.Display, 0, 0);
   }
