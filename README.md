@@ -129,6 +129,13 @@ for the menu; `Tab` on the list for help.
 
 ## Roadmap
 
+v1.1.2 fixes three small-screen rendering issues: a residual drag-smear at the
+zoom-window edge (the magnified push now overscans the panel so no stale pixel
+survives), Dominosa pieces reading as one connected blob because the inter-domino
+gutter rounded to zero at the fitted tile size (floored at 1px), and the Map
+colour-pipette now shows the blue-`X` / red-`+` crosshair to match its pencil /
+fill button — consistent with every other pointer game.
+
 v1.1.1 ships the 40 games above with an on-device picker, a `Tab` command menu
 with an in-menu rules viewer, preset/custom sizing, an 8bpp palette render
 canvas, a battery indicator, idle backlight dimming that deepens into
@@ -150,6 +157,6 @@ A few games have rendering rough edges, tracked as issues:
 
 ## Attribution
 
-Game logic and midend © Simon Tatham and contributors, vendored **unmodified** as a git submodule (`upstream/`) pinned at commit `7ad37c64`. Only the Cardputer frontend (`src/puzzles/`, `lib/`) is original to this project.
+Game logic and midend © Simon Tatham and contributors, vendored as a git submodule (`upstream/`) pinned **unmodified** at commit `7ad37c64`. One small-screen rendering fix — flooring the Dominosa domino gutter at 1px — is carried as an explicit diff in [`patches/`](patches/) and applied to the submodule at build time; the pinned commit itself never changes (see [patches/README.md](patches/README.md)). Only the Cardputer frontend (`src/puzzles/`, `lib/`) is original to this project.
 
 The frontend is MIT — see [LICENSE](LICENSE). The vendored puzzles keep their own MIT licence and copyright in [upstream/LICENCE](upstream/LICENCE).
